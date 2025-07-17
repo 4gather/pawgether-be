@@ -1,0 +1,28 @@
+services:
+  demo_valkey:
+    image: docker.io/bitnami/valkey:7.2
+    ports:
+      - '6379:6379'
+    environment:
+      - VALKEY_PASSWORD=root
+    volumes:
+      - sticky_volume_demo-valkey:/bitnami/valkey/data
+
+  demo_postgres14:
+    image: postgres:14
+    environment:
+      TZ: Asia/Seoul
+      POSTGRES_DB: demo
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_INITDB_ARGS: '--encoding=UTF-8 --lc-collate=C --lc-ctype=C'
+    ports:
+      - 5432:5432
+    restart: on-failure
+    volumes:
+      - sticky_volume_demo_postgres14:/var/lib/postgresql/data
+      - ./db/initdb.d:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  sticky_volume_demo-valkey:
+  sticky_volume_demo_postgres14:
