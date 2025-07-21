@@ -30,6 +30,9 @@ dependencies {
     //jpa
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
+    //jbcrypt
+    implementation("org.mindrot:jbcrypt:0.4")
+
     // validation
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
