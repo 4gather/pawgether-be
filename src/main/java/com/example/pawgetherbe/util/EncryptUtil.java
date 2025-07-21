@@ -1,4 +1,4 @@
 package com.example.pawgetherbe.util;
 
-public final class PasswordUtil {
+public final class EncryptUtil {
 }
