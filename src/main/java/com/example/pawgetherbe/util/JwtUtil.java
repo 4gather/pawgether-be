@@ -1,5 +1,6 @@
 package com.example.pawgetherbe.util;
 
+import com.example.pawgetherbe.controller.dto.UserDto.userSignUpRequestResponse;
 import com.example.pawgetherbe.domain.status.AccessTokenStatus;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -18,18 +19,18 @@ public final class JwtUtil {
 
     private final SecretKey signatureKey;
 
-    private JwtUtil(@Value("${jwt.secret-key}") String secretKey) {
+    public JwtUtil(@Value("${jwt.secret-key}") String secretKey) {
         this.signatureKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
     public static final long ACCESS_TOKEN_VALIDITY_MS = 1000L*60*15; // 15 분
 
-    public String generateAccessToken(UserDto user) {
+    public String generateAccessToken(userSignUpRequestResponse user) {
         return Jwts.builder()
-                .subject(user.getId())
-                .claim("email", user.getEmail())
-                .claim("nickname", user.getNickname())
-                .claim("role", user.getRole())
+                .subject(String.valueOf(user.id()))
+                .claim("email", user.email())
+                .claim("nickname", user.nickname())
+                .claim("role", user.role())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_VALIDITY_MS))
                 .signWith(signatureKey)

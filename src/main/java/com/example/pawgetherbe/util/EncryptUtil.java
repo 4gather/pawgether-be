@@ -1,9 +1,12 @@
 package com.example.pawgetherbe.util;
 
 import org.mindrot.jbcrypt.BCrypt;
+import org.springframework.stereotype.Component;
+
 import java.security.SecureRandom;
 import java.util.Base64;
 
+@Component
 public final class EncryptUtil {
 
     private static final SecureRandom secureRandom = new SecureRandom();

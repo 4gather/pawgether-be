@@ -32,6 +32,7 @@ dependencies {
 
     // validation
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.hibernate.validator:hibernate-validator")
 
     //jwt
     implementation("io.jsonwebtoken:jjwt-api:0.12.5")
@@ -39,7 +40,7 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.5")
 
     //OAuth2
-    implementation ("org.springframework.boot:spring-boot-starter-oauth2-client")
+    implementation("org.apache.oltu.oauth2:org.apache.oltu.oauth2.client:1.0.2")
 
     // lombok
     compileOnly("org.projectlombok:lombok")

@@ -1,5 +1,7 @@
 package com.example.pawgetherbe.domain.entity;
 
+import com.example.pawgetherbe.domain.status.UserRole;
+import com.example.pawgetherbe.domain.status.UserStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,7 +23,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Builder
+@Builder(toBuilder = true)
 @Table(name = "users")
 public class UserEntity extends BaseEntity {
     @Id
@@ -36,7 +38,7 @@ public class UserEntity extends BaseEntity {
     private String password;
 
     @Column(name = "status", length = 255)
-    private String status;
+    private UserStatus status;
 
     @Column(name = "user_img", length = 255)
     private String userImg;
@@ -45,7 +47,7 @@ public class UserEntity extends BaseEntity {
     private String nickName;
 
     @Column(name = "role", length = 255)
-    private String role;
+    private UserRole role;
 
     @OneToMany(mappedBy="user", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<PetFairEntity> petFairEntities = new ArrayList<>();
