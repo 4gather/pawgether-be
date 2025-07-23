@@ -27,9 +27,6 @@ dependencies {
     // web
     implementation("org.springframework.boot:spring-boot-starter-web")
 
-    //jpa
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-
     //jbcrypt
     implementation("org.mindrot:jbcrypt:0.4")
 
@@ -58,6 +55,12 @@ dependencies {
     implementation ("org.springframework.boot:spring-boot-starter-data-redis")
 
     runtimeOnly("org.postgresql:postgresql")
+
+    // querydsl
+    implementation("com.querydsl:querydsl-jpa:${dependencyManagement.importedProperties["querydsl.version"]}:jakarta")
+    annotationProcessor("com.querydsl:querydsl-apt:${dependencyManagement.importedProperties["querydsl.version"]}:jakarta")
+    annotationProcessor("jakarta.persistence:jakarta.persistence-api")
+    annotationProcessor("jakarta.annotation:jakarta.annotation-api")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
