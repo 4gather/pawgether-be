@@ -19,9 +19,6 @@ public final class UserDto {
             String userImg) {}
 
         public record userSignUpRequestResponse(
-                long id,
-                String email,
-                String nickname,
-                String role,
+                String accessToken,
                 String refreshToken) {}
 }

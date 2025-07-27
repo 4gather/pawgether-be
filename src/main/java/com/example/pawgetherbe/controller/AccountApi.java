@@ -12,6 +12,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Duration;
@@ -24,14 +25,14 @@ import java.time.Duration;
 public class AccountApi {
 
     private final SignUpWithIdUseCase signUpWithIdUseCase;
-    private final JwtUtil jwtUtil;
+
 
     @PostMapping("/account")
     public ResponseEntity<String> signup(@Validated @RequestBody userSignUpRequest signUpRequest){
         var user = signUpWithIdUseCase.signUp(signUpRequest);
-        var accessToken = jwtUtil.generateAccessToken(user);
 
-        log.info("Access token: {}", accessToken);
+
+//        log.info("Access token: {}", accessToken);
         log.info("refreshToken token: {}", user.refreshToken());
 
         ResponseCookie cookie = ResponseCookie.from("refresh_token", user.refreshToken())

@@ -8,5 +8,5 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
     UserEntity toUserEntity(userSignUpRequest userDto);
-    userSignUpRequestResponse toUserSignUpResponseDto(UserEntity userEntity, String refreshToken);
+    userSignUpRequestResponse toUserSignUpResponseDto(String accessToken, String refreshToken);
 }

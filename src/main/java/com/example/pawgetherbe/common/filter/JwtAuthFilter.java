@@ -44,21 +44,25 @@ public class JwtAuthFilter implements Filter {
                 return;
             }
 
-            // 유효한 토큰 처리 - 세부 정보 추출
-            String requestUserId = String.valueOf(jwtUtil.getUserIdFromToken(accessToken));
-            String requestUserEmail = jwtUtil.getUserEmailFromToken(accessToken);
-            String requestUserRole = jwtUtil.getUserRoleFromToken(accessToken);
-            String requestUserNickname = jwtUtil.getUserNicknameFromToken(accessToken);
-
-            UserContext.setUserId(requestUserId);
-            UserContext.setUserEmail(requestUserEmail);
-            UserContext.setUserRole(requestUserRole);
-            UserContext.setUserNickname(requestUserNickname);
+            processJwtToken(accessToken);
 
             filterChain.doFilter(request, response);
         } finally {
             UserContext.clear();
         }
+    }
+
+    private void processJwtToken(String accessToken) {
+        // JWT 토큰에서 정보 추출
+        String requestUserId = String.valueOf(jwtUtil.getUserIdFromToken(accessToken));
+        String requestUserEmail = jwtUtil.getUserEmailFromToken(accessToken);
+        String requestUserRole = jwtUtil.getUserRoleFromToken(accessToken);
+        String requestUserNickname = jwtUtil.getUserNicknameFromToken(accessToken);
+
+        UserContext.setUserId(requestUserId);
+        UserContext.setUserEmail(requestUserEmail);
+        UserContext.setUserRole(requestUserRole);
+        UserContext.setUserNickname(requestUserNickname);
     }
 
     private String getToken(HttpServletRequest request) {
