@@ -1,6 +1,5 @@
 package com.example.pawgetherbe.util;
 
-import com.example.pawgetherbe.controller.dto.UserDto.userSignUpRequestResponse;
 import com.example.pawgetherbe.domain.entity.UserEntity;
 import com.example.pawgetherbe.domain.status.AccessTokenStatus;
 import io.jsonwebtoken.Claims;

@@ -18,7 +18,5 @@ public final class UserDto {
             String password,
             String userImg) {}
 
-        public record userSignUpRequestResponse(
-                String accessToken,
-                String refreshToken) {}
+    public record oauth2SignUpResponse(String accessToken, String refreshToken) {}
 }

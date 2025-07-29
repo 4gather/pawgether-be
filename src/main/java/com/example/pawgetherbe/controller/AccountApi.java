@@ -1,41 +1,78 @@
 package com.example.pawgetherbe.controller;
 
+import com.example.pawgetherbe.config.OauthConfig;
 import com.example.pawgetherbe.controller.dto.UserDto.userSignUpRequest;
 import com.example.pawgetherbe.usecase.users.SignUpWithIdUseCase;
-import com.example.pawgetherbe.util.JwtUtil;
+import com.example.pawgetherbe.usecase.users.SignUpWithOauthUseCase;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.IOException;
 import java.time.Duration;
 
-
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/account")
 @RequiredArgsConstructor
 @Slf4j
 public class AccountApi {
 
     private final SignUpWithIdUseCase signUpWithIdUseCase;
+    private final SignUpWithOauthUseCase signUpWithOauthUseCase;
+    private final OauthConfig oauthConfig;
 
+    @PostMapping("/signup")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void signup(@Validated @RequestBody userSignUpRequest signUpRequest){
+        signUpWithIdUseCase.signUp(signUpRequest);
+    }
 
-    @PostMapping("/account")
-    public ResponseEntity<String> signup(@Validated @RequestBody userSignUpRequest signUpRequest){
-        var user = signUpWithIdUseCase.signUp(signUpRequest);
+    @PostMapping("/signup/email")
+    @ResponseStatus(HttpStatus.OK)
+    public void signupEmailCheck(@RequestBody String email){
+        signUpWithIdUseCase.signupEmailCheck(email);
+    }
 
+    @GetMapping("/oauth/{provider}")
+    public void redirectToProvider(@PathVariable String provider, HttpServletResponse response) throws IOException {
+        var providerProps = oauthConfig.getProviders().get(provider);
+        if (providerProps == null) {
+            throw new IllegalArgumentException("Unknown OAuth provider: " + provider);
+        }
 
-//        log.info("Access token: {}", accessToken);
-        log.info("refreshToken token: {}", user.refreshToken());
+        String redirectUrl = UriComponentsBuilder
+                .fromHttpUrl(providerProps.getAuthorizationUri())
+                .queryParam("client_id", providerProps.getClientId())
+                .queryParam("redirect_uri", providerProps.getRedirectUri())
+                .queryParam("response_type", "code")
+                .queryParam("scope", String.join(" ", providerProps.getScope()))
+                .build()
+                .toUriString();
 
-        ResponseCookie cookie = ResponseCookie.from("refresh_token", user.refreshToken())
+        response.sendRedirect(redirectUrl);
+    }
+
+    @GetMapping("/oauth/callback/{provider}")
+    public ResponseEntity<String> oauthCallback(
+            @PathVariable String provider,
+            @RequestParam String code) {
+        var token = signUpWithOauthUseCase.oauthSignUp(provider,code);
+
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", token.refreshToken())
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
@@ -45,6 +82,6 @@ public class AccountApi {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(accessToken);
+                .body(token.accessToken());
     }
 }
