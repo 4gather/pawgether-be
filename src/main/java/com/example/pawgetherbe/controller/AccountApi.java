@@ -1,6 +1,7 @@
 package com.example.pawgetherbe.controller;
 
 import com.example.pawgetherbe.config.OauthConfig;
+import com.example.pawgetherbe.controller.dto.UserDto.OAuth2ResponseBody;
 import com.example.pawgetherbe.controller.dto.UserDto.userSignUpRequest;
 import com.example.pawgetherbe.usecase.users.SignUpWithIdUseCase;
 import com.example.pawgetherbe.usecase.users.SignUpWithOauthUseCase;
@@ -67,12 +68,12 @@ public class AccountApi {
     }
 
     @GetMapping("/oauth/callback/{provider}")
-    public ResponseEntity<String> oauthCallback(
+    public ResponseEntity<OAuth2ResponseBody> oauthCallback(
             @PathVariable String provider,
             @RequestParam String code) {
-        var token = signUpWithOauthUseCase.oauthSignUp(provider,code);
+        var oauth2SignUpResponse = signUpWithOauthUseCase.oauthSignUp(provider,code);
 
-        ResponseCookie cookie = ResponseCookie.from("refresh_token", token.refreshToken())
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", oauth2SignUpResponse.refreshToken())
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
@@ -82,6 +83,12 @@ public class AccountApi {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(token.accessToken());
+                .body(new OAuth2ResponseBody(
+                        oauth2SignUpResponse.accessToken(),
+                        oauth2SignUpResponse.provider(),
+                        oauth2SignUpResponse.email(),
+                        oauth2SignUpResponse.nickname(),
+                        oauth2SignUpResponse.userImg()
+                ));
     }
 }

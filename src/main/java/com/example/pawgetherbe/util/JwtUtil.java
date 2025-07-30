@@ -28,8 +28,8 @@ public final class JwtUtil {
     public String generateAccessToken(UserEntity user) {
         return Jwts.builder()
                 .subject(String.valueOf(user.getId()))
-                .claim("email", user.getEmail())
-                .claim("nickname", user.getNickName())
+//                .claim("email", user.getEmail())
+//                .claim("nickname", user.getNickName())
                 .claim("role", user.getRole())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_VALIDITY_MS))

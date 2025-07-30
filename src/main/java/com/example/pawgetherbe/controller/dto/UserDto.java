@@ -1,5 +1,6 @@
 package com.example.pawgetherbe.controller.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -15,8 +16,24 @@ public final class UserDto {
             String email,
             @NotNull(message = "비밀번호를 입력해주세요")
             @Size(min = 8, message = "비밀번호는 8자 이상 입력해주세요")
-            String password,
-            String userImg) {}
+            String password
+            ) {}
 
-    public record oauth2SignUpResponse(String accessToken, String refreshToken) {}
+    public record oauth2SignUpResponse(
+            String accessToken,
+            String refreshToken,
+            String provider,
+            String email,
+            String nickname,
+            String userImg
+    ) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record OAuth2ResponseBody(
+            String accessToken,
+            String provider,
+            String email,
+            String nickname,
+            String userImg
+    ) {}
 }

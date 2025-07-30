@@ -90,7 +90,6 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase 
         log.info("oauthSignUp start");
         Map<String, Object> userInfo = fetchOAuthUserInfo(provider, code);
 
-
         String email = (String) userInfo.get("email");
         String nickname = (String) userInfo.get("nickname");
         String providerId = (String) userInfo.get("providerId");
@@ -98,33 +97,60 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase 
         log.info("nickname = {}", nickname);
         log.info("providerId = {}", providerId);
 
-        if (oauthRepository.existsByOauthProviderIdAndOauthProvider(providerId, provider)){
-            var oauthUser = oauthRepository.findByOauthProviderId(providerId)
-                    .orElseThrow(() -> new IllegalStateException("존재해야 하는 OAuth 유저가 없습니다."));
-            var token = getToken(oauthUser.getUser());
-            return new oauth2SignUpResponse(token.get("accessToken"), token.get("refreshToken"));
+        var oauthCheck = oauthRepository.existsByOauthProviderIdAndOauthProvider(providerId, provider);
+        var userCheck = userRepository.existsByEmail(email);
+
+        UserEntity user;
+
+        if(userCheck && !oauthCheck) {
+            user = userRepository.findByEmail(email);
+            var oauthEntity = OauthEntity.builder()
+                    .oauthProviderId(providerId)
+                    .oauthProvider(provider)
+                    .user(user)
+                    .build();
+            oauthRepository.save(oauthEntity);
+            var token = getToken(user);
+
+            return new oauth2SignUpResponse(
+                    token.get("accessToken"),
+                    token.get("refreshToken"),
+                    null,
+                    email,
+                    nickname,
+                    user.getUserImg()
+            );
+        } else if (oauthCheck){
+            user = oauthRepository.findByOauthProviderId(providerId).get().getUser();
+        }else {
+            UserEntity newUser = UserEntity.builder()
+                    .email(email)
+                    .nickName(nickname)
+                    .password(passwordEncode(UUID.randomUUID().toString().substring(0, 8))) // 랜덤 값
+                    .status(UserStatus.ACTIVE)
+                    .role(UserRole.USER)
+                    .build();
+
+            user = userRepository.save(newUser);
+
+            var oauthEntity = OauthEntity.builder()
+                    .oauthProviderId(providerId)
+                    .oauthProvider(provider)
+                    .user(user)
+                    .build();
+            oauthRepository.save(oauthEntity);
         }
-
-        UserEntity newUser = UserEntity.builder()
-                                .email(email)
-                                .nickName(nickname)
-                                .password(passwordEncode(UUID.randomUUID().toString().substring(0, 8))) // 랜덤 값
-                                .status(UserStatus.ACTIVE)
-                                .role(UserRole.USER)
-                                .build();
-
-        var user = userRepository.save(newUser);
-
-        var oauthEntity = OauthEntity.builder()
-                .oauthProviderId(providerId)
-                .oauthProvider(provider)
-                .user(user)
-                .build();
-        oauthRepository.save(oauthEntity);
 
         var token = getToken(user);
 
-        return new oauth2SignUpResponse(token.get("accessToken"), token.get("refreshToken"));
+        return new oauth2SignUpResponse(
+                token.get("accessToken"),
+                token.get("refreshToken"),
+                provider,
+                email,
+                nickname,
+                user.getUserImg()
+        );
     }
 
     public Map<String, String> getToken(UserEntity userEntity) {
