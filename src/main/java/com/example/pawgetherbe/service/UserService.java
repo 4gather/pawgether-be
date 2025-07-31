@@ -12,6 +12,7 @@ import com.example.pawgetherbe.domain.status.UserStatus;
 import com.example.pawgetherbe.mapper.UserMapper;
 import com.example.pawgetherbe.repository.OauthRepository;
 import com.example.pawgetherbe.repository.UserRepository;
+import com.example.pawgetherbe.usecase.users.DeleteUserUseCase;
 import com.example.pawgetherbe.usecase.users.SignUpWithIdUseCase;
 import com.example.pawgetherbe.usecase.users.SignUpWithOauthUseCase;
 import com.example.pawgetherbe.util.JwtUtil;
@@ -51,7 +52,7 @@ import static com.example.pawgetherbe.util.EncryptUtil.passwordEncode;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase {
+public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase, DeleteUserUseCase {
 
     private final UserRepository userRepository;
     private final OauthRepository oauthRepository;
@@ -80,6 +81,15 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase 
         if (userRepository.existsByEmail(email)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST, email + " 이미 가입된 계정입니다."
+            );
+        }
+    }
+
+    @Override
+    public void signupNicknameCheck(String nickname) {
+        if(userRepository.existsByNickName(nickname)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, nickname + " 이미 가입된 계정입니다."
             );
         }
     }
@@ -123,6 +133,9 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase 
         } else if (oauthCheck){
             user = oauthRepository.findByOauthProviderId(providerId).get().getUser();
         }else {
+            if (userRepository.existsByNickName(nickname)){
+                nickname = UUID.randomUUID().toString().substring(0, 8);
+            }
             UserEntity newUser = UserEntity.builder()
                     .email(email)
                     .nickName(nickname)
@@ -151,6 +164,16 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase 
                 nickname,
                 user.getUserImg()
         );
+    }
+
+    @Override
+    public void deleteAccount(String email, String refreshToken) {
+        var oauthCheck = oauthRepository.existsByEmail(email);
+        if(oauthCheck) {
+            oauthRepository.deleteByEmail(email);
+        }
+        userRepository.deleteByEmail(email);
+        redisTemplate.delete(refreshToken);
     }
 
     public Map<String, String> getToken(UserEntity userEntity) {

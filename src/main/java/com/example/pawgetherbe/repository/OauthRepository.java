@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface OauthRepository extends JpaRepository<OauthEntity, Long> {
     boolean existsByOauthProviderIdAndOauthProvider(String oauthProviderId, String oauthProvider);
     Optional<OauthEntity> findByOauthProviderId(String oauthProviderId);
+    boolean existsByEmail(String email);
+    void deleteByEmail(String email);
 }
