@@ -6,6 +6,7 @@ import com.example.pawgetherbe.controller.dto.UserDto.userSignUpRequest;
 import com.example.pawgetherbe.usecase.users.DeleteUserUseCase;
 import com.example.pawgetherbe.usecase.users.SignUpWithIdUseCase;
 import com.example.pawgetherbe.usecase.users.SignUpWithOauthUseCase;
+import com.example.pawgetherbe.util.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,21 +25,25 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.time.Duration;
+
+import static com.example.pawgetherbe.util.ValidationUtil.isValidId;
 
 @RestController
 @RequestMapping("/api/v1/account")
 @RequiredArgsConstructor
 @Slf4j
 public class AccountApi {
-
     private final SignUpWithIdUseCase signUpWithIdUseCase;
     private final SignUpWithOauthUseCase signUpWithOauthUseCase;
     private final DeleteUserUseCase deleteUserUseCase;
+
     private final OauthConfig oauthConfig;
+    private final JwtUtil jwtUtil;
 
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
@@ -55,7 +60,7 @@ public class AccountApi {
     @DeleteMapping
     @ResponseStatus(HttpStatus.OK)
     public void deleteAccount(String email, @RequestHeader("RefreshToken") String refreshTokenHeader) {
-        String refreshToken = extractToken(refreshTokenHeader);
+        String refreshToken = jwtUtil.extractToken(refreshTokenHeader);
         deleteUserUseCase.deleteAccount(email, refreshToken);
     }
 
@@ -68,6 +73,9 @@ public class AccountApi {
     @PostMapping("/signup/nickname")
     @ResponseStatus(HttpStatus.OK)
     public void signupNicknameCheck(@RequestBody String nickname){
+        if (!isValidId(nickname)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "nickname 은 3~20자의 영문, 숫자, 한글, 언더바(_)만 사용할 수 있습니다.");
+        }
         signUpWithIdUseCase.signupNicknameCheck(nickname);
     }
 
@@ -113,12 +121,5 @@ public class AccountApi {
                         oauth2SignUpResponse.nickname(),
                         oauth2SignUpResponse.userImg()
                 ));
-    }
-
-    private String extractToken(String header) {
-        if (header != null && header.startsWith("Bearer ")) {
-            return header.substring(7); // "Bearer " 제거
-        }
-        return null;
     }
 }

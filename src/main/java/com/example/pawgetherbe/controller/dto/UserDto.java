@@ -8,7 +8,7 @@ public final class UserDto {
 
     public record userSignUpRequest(
             @NotNull(message = "닉네임을 입력해 주세요")
-            @Size(min = 3, max = 50, message = "닉네임은 3~50자로 입력해주세요")
+            @Size(min = 3, max = 20, message = "닉네임은 3~50자로 입력해주세요")
             String nickname,
             @NotNull(message = "이메일을 입력해 주세요")
             @Email(message = "이메일 형식을 지켜주세요")

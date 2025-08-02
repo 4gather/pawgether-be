@@ -55,6 +55,13 @@ public final class JwtUtil {
                 .parseSignedClaims(accessToken);
     }
 
+    public String extractToken(String header) {
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+        return null;
+    }
+
     public Long getUserIdFromToken(String accessToken) {
         return Long.parseLong(parseToken(accessToken).getPayload().getSubject());
     }

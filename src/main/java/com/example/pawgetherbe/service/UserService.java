@@ -70,7 +70,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
                     .toBuilder()
                     .password(passwordEncode(request.password()))
                     .status(UserStatus.ACTIVE)
-                    .role(UserRole.USER)
+                    .role(UserRole.USER_EMAIL)
                     .build();
 
         userRepository.save(userEntityBuilder);
@@ -141,7 +141,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
                     .nickName(nickname)
                     .password(passwordEncode(UUID.randomUUID().toString().substring(0, 8))) // 랜덤 값
                     .status(UserStatus.ACTIVE)
-                    .role(UserRole.USER)
+                    .role(UserRole.USER_AUTH)
                     .build();
 
             user = userRepository.save(newUser);
