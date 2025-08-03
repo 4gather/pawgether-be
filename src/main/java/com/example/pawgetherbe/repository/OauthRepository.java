@@ -12,4 +12,7 @@ public interface OauthRepository extends JpaRepository<OauthEntity, Long> {
     Optional<OauthEntity> findByOauthProviderId(String oauthProviderId);
     boolean existsByEmail(String email);
     void deleteByEmail(String email);
+
+    boolean existsByUser_Id(Long userId);
+    void deleteByUser_Id(Long userId);
 }

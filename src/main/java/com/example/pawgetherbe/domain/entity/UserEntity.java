@@ -66,4 +66,9 @@ public class UserEntity extends BaseEntity {
 
     @OneToMany(mappedBy="user", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<LikeEntity> likeEntities = new ArrayList<>();
+
+    public void updateProfile(String nickname, String userImg) {
+        if (nickname != null) this.nickName = nickname;
+        if (userImg != null) this.userImg = userImg;
+    }
 }

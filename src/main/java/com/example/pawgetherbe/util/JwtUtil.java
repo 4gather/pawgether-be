@@ -5,6 +5,7 @@ import com.example.pawgetherbe.domain.status.AccessTokenStatus;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,13 +54,6 @@ public final class JwtUtil {
                 .verifyWith(signatureKey)
                 .build()
                 .parseSignedClaims(accessToken);
-    }
-
-    public String extractToken(String header) {
-        if (header != null && header.startsWith("Bearer ")) {
-            return header.substring(7);
-        }
-        return null;
     }
 
     public Long getUserIdFromToken(String accessToken) {

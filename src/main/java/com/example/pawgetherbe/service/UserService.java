@@ -2,9 +2,10 @@ package com.example.pawgetherbe.service;
 
 import com.example.pawgetherbe.common.oauth.OAuthProviderSpec;
 import com.example.pawgetherbe.config.OauthConfig;
-import com.example.pawgetherbe.config.OauthConfig.Provider;
-import com.example.pawgetherbe.controller.dto.UserDto.oauth2SignUpResponse;
-import com.example.pawgetherbe.controller.dto.UserDto.userSignUpRequest;
+import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserResponse;
+import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserRequest;
+import com.example.pawgetherbe.controller.dto.UserDto.Oauth2SignUpResponse;
+import com.example.pawgetherbe.controller.dto.UserDto.UserSignUpRequest;
 import com.example.pawgetherbe.domain.entity.OauthEntity;
 import com.example.pawgetherbe.domain.entity.UserEntity;
 import com.example.pawgetherbe.domain.status.UserRole;
@@ -13,6 +14,8 @@ import com.example.pawgetherbe.mapper.UserMapper;
 import com.example.pawgetherbe.repository.OauthRepository;
 import com.example.pawgetherbe.repository.UserRepository;
 import com.example.pawgetherbe.usecase.users.DeleteUserUseCase;
+import com.example.pawgetherbe.usecase.users.EditUserUseCase;
+import com.example.pawgetherbe.usecase.users.SignOutUseCase;
 import com.example.pawgetherbe.usecase.users.SignUpWithIdUseCase;
 import com.example.pawgetherbe.usecase.users.SignUpWithOauthUseCase;
 import com.example.pawgetherbe.util.JwtUtil;
@@ -23,22 +26,12 @@ import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.github.scribejava.core.model.OAuthRequest;
 import com.github.scribejava.core.model.Response;
 import com.github.scribejava.core.model.Verb;
-import com.github.scribejava.core.oauth.OAuth20Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
@@ -52,7 +45,7 @@ import static com.example.pawgetherbe.util.EncryptUtil.passwordEncode;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase, DeleteUserUseCase {
+public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase, DeleteUserUseCase, SignOutUseCase, EditUserUseCase {
 
     private final UserRepository userRepository;
     private final OauthRepository oauthRepository;
@@ -64,7 +57,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
 
     @Override
     @Transactional
-    public void signUp(userSignUpRequest request) {
+    public void signUp(UserSignUpRequest request) {
         var userEntity = userMapper.toUserEntity(request);
         var userEntityBuilder = userEntity
                     .toBuilder()
@@ -96,7 +89,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
 
     @Override
     @Transactional
-    public oauth2SignUpResponse oauthSignUp(String provider, String code) {
+    public Oauth2SignUpResponse oauthSignUp(String provider, String code) {
         log.info("oauthSignUp start");
         Map<String, Object> userInfo = fetchOAuthUserInfo(provider, code);
 
@@ -122,7 +115,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
             oauthRepository.save(oauthEntity);
             var token = getToken(user);
 
-            return new oauth2SignUpResponse(
+            return new Oauth2SignUpResponse(
                     token.get("accessToken"),
                     token.get("refreshToken"),
                     null,
@@ -156,24 +149,43 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
 
         var token = getToken(user);
 
-        return new oauth2SignUpResponse(
+        return new Oauth2SignUpResponse(
                 token.get("accessToken"),
                 token.get("refreshToken"),
                 provider,
-                email,
-                nickname,
+                user.getEmail(),
+                user.getNickName(),
                 user.getUserImg()
         );
     }
 
     @Override
-    public void deleteAccount(String email, String refreshToken) {
-        var oauthCheck = oauthRepository.existsByEmail(email);
+    public void deleteAccount(String accessHeader, String refreshToken) {
+        var id = jwtUtil.getUserIdFromToken(accessHeader);
+        var oauthCheck = oauthRepository.existsByUser_Id(id);
         if(oauthCheck) {
-            oauthRepository.deleteByEmail(email);
+            oauthRepository.deleteByUser_Id(id);
         }
-        userRepository.deleteByEmail(email);
+        userRepository.deleteById(id);
         redisTemplate.delete(refreshToken);
+    }
+
+    @Override
+    public void signOut(String refreshToken) {
+        redisTemplate.delete(refreshToken);
+    }
+
+    @Override
+    public UpdateUserResponse updateUserInfo(UpdateUserRequest request, String accessHeader) {
+        var id = jwtUtil.getUserIdFromToken(accessHeader);
+        var user = userRepository.findById(id).orElseThrow(() ->
+            new ResponseStatusException(HttpStatus.NOT_FOUND, " 존재하지 않는 계정입니다.")
+        );
+        user.updateProfile(request.nickname(), request.userImg());
+
+        var accessToken = jwtUtil.generateAccessToken(user);
+
+        return new UpdateUserResponse(accessToken, user.getUserImg());
     }
 
     public Map<String, String> getToken(UserEntity userEntity) {
@@ -190,7 +202,6 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
         return tokenMap;
     }
 
-
     public Map<String, Object> fetchOAuthUserInfo(String provider, String code){
         var oauth = oauthConfig.getProviders().get(provider);
 
@@ -200,20 +211,16 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
         log.info("getClientId = {}", oauth.getClientId());
         log.info("clientSecret = {}", oauth.getClientSecret());
 
-        OAuth20Service service = null;
+//        OAuth20Service service = null;
 
-        if ("kakao".equals(provider)) {
-            return fetchKakaoUserInfo(code, oauth);
-        } else {
-            service = new ServiceBuilder(oauth.getClientId())
-                    .apiSecret(oauth.getClientSecret())
-                    .callback(oauth.getRedirectUri())
-                    .defaultScope(String.join(" ", oauth.getScope()))
-                    .build(new OAuthProviderSpec(
-                            oauth.getAuthorizationUri(),
-                            oauth.getTokenUri()
-                    ));
-        }
+        var service = new ServiceBuilder(oauth.getClientId())
+                .apiSecret(oauth.getClientSecret())
+                .callback(oauth.getRedirectUri())
+                .defaultScope(String.join(" ", oauth.getScope()))
+                .build(new OAuthProviderSpec(
+                        oauth.getAuthorizationUri(),
+                        oauth.getTokenUri()
+                ));
 
         try {
             OAuth2AccessToken accessToken = service.getAccessToken(code);
@@ -246,48 +253,48 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
             throw new RuntimeException("OAuth 처리 중 오류 발생", e);
         }
     }
-    private Map<String, Object> fetchKakaoUserInfo(String code, Provider oauth) {
-        // 1. 토큰 요청
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("grant_type", "authorization_code");
-        params.add("client_id", oauth.getClientId());
-        params.add("redirect_uri", oauth.getRedirectUri());
-        params.add("code", code);
-
-        if (StringUtils.hasText(oauth.getClientSecret())) {
-            params.add("client_secret", oauth.getClientSecret());
-        }
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
-
-        ResponseEntity<JsonNode> tokenResponse = new RestTemplate()
-                .postForEntity(oauth.getTokenUri(), request, JsonNode.class);
-
-        String accessToken = tokenResponse.getBody().get("access_token").asText();
-
-        // 2. 사용자 정보 요청
-        HttpHeaders userInfoHeaders = new HttpHeaders();
-        userInfoHeaders.setBearerAuth(accessToken);
-        HttpEntity<Void> userInfoRequest = new HttpEntity<>(userInfoHeaders);
-
-        ResponseEntity<JsonNode> userInfoResponse = new RestTemplate()
-                .exchange(oauth.getUserInfoUri(), HttpMethod.GET, userInfoRequest, JsonNode.class);
-
-        JsonNode root = userInfoResponse.getBody();
-        JsonNode kakaoAccount = root.path("kakao_account");
-        JsonNode profile = kakaoAccount.path("profile");
-
-        String email = kakaoAccount.path("email").asText(null);
-        if (email == null || email.isEmpty()) {
-            email = "random-" + UUID.randomUUID().toString().substring(0, 8) + "@example.com";
-        }
-
-        return Map.of(
-                "email", email,
-                "nickname", profile.path("nickname").asText(),
-                "providerId", root.path("id").asText()
-        );
-    }
+//    private Map<String, Object> fetchKakaoUserInfo(String code, Provider oauth) {
+//        // 1. 토큰 요청
+//        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+//        params.add("grant_type", "authorization_code");
+//        params.add("client_id", oauth.getClientId());
+//        params.add("redirect_uri", oauth.getRedirectUri());
+//        params.add("code", code);
+//
+//        if (StringUtils.hasText(oauth.getClientSecret())) {
+//            params.add("client_secret", oauth.getClientSecret());
+//        }
+//
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+//        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
+//
+//        ResponseEntity<JsonNode> tokenResponse = new RestTemplate()
+//                .postForEntity(oauth.getTokenUri(), request, JsonNode.class);
+//
+//        String accessToken = tokenResponse.getBody().get("access_token").asText();
+//
+//        // 2. 사용자 정보 요청
+//        HttpHeaders userInfoHeaders = new HttpHeaders();
+//        userInfoHeaders.setBearerAuth(accessToken);
+//        HttpEntity<Void> userInfoRequest = new HttpEntity<>(userInfoHeaders);
+//
+//        ResponseEntity<JsonNode> userInfoResponse = new RestTemplate()
+//                .exchange(oauth.getUserInfoUri(), HttpMethod.GET, userInfoRequest, JsonNode.class);
+//
+//        JsonNode root = userInfoResponse.getBody();
+//        JsonNode kakaoAccount = root.path("kakao_account");
+//        JsonNode profile = kakaoAccount.path("profile");
+//
+//        String email = kakaoAccount.path("email").asText(null);
+//        if (email == null || email.isEmpty()) {
+//            email = "random-" + UUID.randomUUID().toString().substring(0, 8) + "@example.com";
+//        }
+//
+//        return Map.of(
+//                "email", email,
+//                "nickname", profile.path("nickname").asText(),
+//                "providerId", root.path("id").asText()
+//        );
+//    }
 }
