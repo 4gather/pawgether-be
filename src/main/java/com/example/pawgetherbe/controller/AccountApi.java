@@ -66,7 +66,7 @@ public class AccountApi {
     }
 
     @DeleteMapping
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteAccount(@RequestHeader(value = "Authorization", required = false) String accessHeader,
                               @CookieValue(value = "refresh_token", required = false) String refreshToken) {
         deleteUserUseCase.deleteAccount(accessHeader, refreshToken);
@@ -76,7 +76,7 @@ public class AccountApi {
     @ResponseStatus(HttpStatus.OK)
     public void signupEmailCheck(@RequestBody String email){
         if (!isValidEmail(email)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "email 형식을 지켜주세요");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "email 형식을 지켜주세요");
         }
         signUpWithIdUseCase.signupEmailCheck(email);
     }
@@ -85,7 +85,7 @@ public class AccountApi {
     @ResponseStatus(HttpStatus.OK)
     public void signupNicknameCheck(@RequestBody String nickname){
         if (!isValidNickName(nickname)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "nickname 은 3~20자의 영문, 숫자, 한글, 언더바(_)만 사용할 수 있습니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "nickname 은 3~20자의 영문, 숫자, 한글, 언더바(_)만 사용할 수 있습니다.");
         }
         signUpWithIdUseCase.signupNicknameCheck(nickname);
     }

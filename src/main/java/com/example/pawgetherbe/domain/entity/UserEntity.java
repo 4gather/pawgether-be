@@ -71,4 +71,8 @@ public class UserEntity extends BaseEntity {
         if (nickname != null) this.nickName = nickname;
         if (userImg != null) this.userImg = userImg;
     }
+
+    public void updateRole(UserRole role) {
+        this.role = role;
+    }
 }

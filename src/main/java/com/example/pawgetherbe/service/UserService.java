@@ -73,7 +73,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     public void signupEmailCheck(String email) {
         if (userRepository.existsByEmail(email)) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, email + " 이미 가입된 계정입니다."
+                    HttpStatus.CONFLICT, email + " 이미 가입된 계정입니다."
             );
         }
     }
@@ -82,7 +82,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     public void signupNicknameCheck(String nickname) {
         if(userRepository.existsByNickName(nickname)) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, nickname + " 이미 가입된 계정입니다."
+                    HttpStatus.CONFLICT, nickname + " 이미 가입된 계정입니다."
             );
         }
     }
@@ -114,6 +114,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
                     .build();
             oauthRepository.save(oauthEntity);
             var token = getToken(user);
+            user.updateRole(UserRole.USER_BOTH);
 
             return new Oauth2SignUpResponse(
                     token.get("accessToken"),

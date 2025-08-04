@@ -55,14 +55,14 @@ public class JwtAuthFilter implements Filter {
     private void processJwtToken(String accessToken) {
         // JWT 토큰에서 정보 추출
         String requestUserId = String.valueOf(jwtUtil.getUserIdFromToken(accessToken));
-        String requestUserEmail = jwtUtil.getUserEmailFromToken(accessToken);
+//        String requestUserEmail = jwtUtil.getUserEmailFromToken(accessToken);
         String requestUserRole = jwtUtil.getUserRoleFromToken(accessToken);
-        String requestUserNickname = jwtUtil.getUserNicknameFromToken(accessToken);
+//        String requestUserNickname = jwtUtil.getUserNicknameFromToken(accessToken);
 
         UserContext.setUserId(requestUserId);
-        UserContext.setUserEmail(requestUserEmail);
+//        UserContext.setUserEmail(requestUserEmail);
         UserContext.setUserRole(requestUserRole);
-        UserContext.setUserNickname(requestUserNickname);
+//        UserContext.setUserNickname(requestUserNickname);
     }
 
     private String getToken(HttpServletRequest request) {

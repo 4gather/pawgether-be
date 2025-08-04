@@ -60,13 +60,13 @@ public final class JwtUtil {
         return Long.parseLong(parseToken(accessToken).getPayload().getSubject());
     }
 
-    public String getUserEmailFromToken(String accessToken) {
-        return parseToken(accessToken).getPayload().get("email", String.class);
-    }
-
-    public String getUserNicknameFromToken(String accessToken) {
-        return parseToken(accessToken).getPayload().get("nickname", String.class);
-    }
+//    public String getUserEmailFromToken(String accessToken) {
+//        return parseToken(accessToken).getPayload().get("email", String.class);
+//    }
+//
+//    public String getUserNicknameFromToken(String accessToken) {
+//        return parseToken(accessToken).getPayload().get("nickname", String.class);
+//    }
 
     public String getUserRoleFromToken(String accessToken) {
         return parseToken(accessToken).getPayload().get("role", String.class);
