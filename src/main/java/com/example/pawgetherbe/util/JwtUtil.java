@@ -1,11 +1,10 @@
 package com.example.pawgetherbe.util;
 
-import com.example.pawgetherbe.domain.entity.UserEntity;
+import com.example.pawgetherbe.controller.dto.UserDto.UserAccessTokenDto;
 import com.example.pawgetherbe.domain.status.AccessTokenStatus;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,12 +25,12 @@ public final class JwtUtil {
 
     public static final long ACCESS_TOKEN_VALIDITY_MS = 1000L*60*15; // 15 분
 
-    public String generateAccessToken(UserEntity user) {
+    public String generateAccessToken(UserAccessTokenDto user) {
         return Jwts.builder()
-                .subject(String.valueOf(user.getId()))
+                .subject(String.valueOf(user.id()))
 //                .claim("email", user.getEmail())
 //                .claim("nickname", user.getNickName())
-                .claim("role", user.getRole())
+                .claim("role", user.role())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_VALIDITY_MS))
                 .signWith(signatureKey)

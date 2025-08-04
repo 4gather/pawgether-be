@@ -2,6 +2,7 @@ package com.example.pawgetherbe.service;
 
 import com.example.pawgetherbe.common.oauth.OAuthProviderSpec;
 import com.example.pawgetherbe.config.OauthConfig;
+import com.example.pawgetherbe.controller.dto.UserDto.UserAccessTokenDto;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserResponse;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.Oauth2SignUpResponse;
@@ -39,6 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.example.pawgetherbe.domain.UserContext.getUserId;
 import static com.example.pawgetherbe.util.EncryptUtil.generateRefreshToken;
 import static com.example.pawgetherbe.util.EncryptUtil.passwordEncode;
 
@@ -70,6 +72,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     }
 
     @Override
+    @Transactional(readOnly = true)
     public void signupEmailCheck(String email) {
         if (userRepository.existsByEmail(email)) {
             throw new ResponseStatusException(
@@ -79,6 +82,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     }
 
     @Override
+    @Transactional(readOnly = true)
     public void signupNicknameCheck(String nickname) {
         if(userRepository.existsByNickName(nickname)) {
             throw new ResponseStatusException(
@@ -178,20 +182,24 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
 
     @Override
     public UpdateUserResponse updateUserInfo(UpdateUserRequest request, String accessHeader) {
-        var id = jwtUtil.getUserIdFromToken(accessHeader);
-        var user = userRepository.findById(id).orElseThrow(() ->
+        var id = getUserId();
+        var user = userRepository.findById(Long.valueOf(id)).orElseThrow(() ->
             new ResponseStatusException(HttpStatus.NOT_FOUND, " 존재하지 않는 계정입니다.")
         );
         user.updateProfile(request.nickname(), request.userImg());
 
-        var accessToken = jwtUtil.generateAccessToken(user);
+        var accessToken = jwtUtil.generateAccessToken(
+                new UserAccessTokenDto(user.getId(), user.getRole())
+        );
 
         return new UpdateUserResponse(accessToken, user.getUserImg());
     }
 
     public Map<String, String> getToken(UserEntity userEntity) {
         String refreshToken = generateRefreshToken();
-        String accessToken = jwtUtil.generateAccessToken(userEntity);
+        String accessToken = jwtUtil.generateAccessToken(
+                new UserAccessTokenDto(userEntity.getId(), userEntity.getRole())
+        );
 
         // Redis에 저장 (key: refreshToken, value: userId)
         redisTemplate.opsForValue().set(refreshToken, String.valueOf(userEntity.getId()), Duration.ofDays(7));

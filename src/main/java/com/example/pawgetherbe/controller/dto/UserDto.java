@@ -1,10 +1,16 @@
 package com.example.pawgetherbe.controller.dto;
 
+import com.example.pawgetherbe.domain.status.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 public final class UserDto {
+
+    public record UserAccessTokenDto(
+            Long id,
+            UserRole role
+    ) {}
 
     public record UserSignUpRequest(
             @NotNull(message = "닉네임을 입력해 주세요")
@@ -21,6 +27,7 @@ public final class UserDto {
             String password
             ) {}
     public record UpdateUserRequest(
+            @Pattern(regexp = "^[a-zA-Z0-9가-힣_]{3,20}$", message = "닉네임은 영문, 숫자, 한글, 언더바(_)만 사용할 수 있습니다.")
             String nickname,
             String userImg
     ) {}
