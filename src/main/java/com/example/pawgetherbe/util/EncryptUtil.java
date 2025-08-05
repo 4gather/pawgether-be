@@ -1,8 +1,10 @@
 package com.example.pawgetherbe.util;
 
 import org.mindrot.jbcrypt.BCrypt;
+
 import java.security.SecureRandom;
 import java.util.Base64;
+
 
 public final class EncryptUtil {
 

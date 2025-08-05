@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Builder
+@Builder(toBuilder = true)
 @Table(name = "oauth")
 public class OauthEntity extends BaseEntity {
     @Id
@@ -28,11 +28,11 @@ public class OauthEntity extends BaseEntity {
     @Column(name = "oauth_id")
     private Long id;
 
+    @Column(name = "oauth_provider_id", nullable = false, length = 255)
+    private String oauthProviderId;
+
     @Column(name = "oauth_provider", nullable = false, length = 255)
     private String oauthProvider;
-
-    @Column(name = "oauth_user_id", nullable = false, length = 255)
-    private String oauthUserId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userId", nullable = false)
