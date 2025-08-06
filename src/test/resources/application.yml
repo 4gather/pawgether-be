@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: pawgether-be
+
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: test
+    password:
+    driver-class-name: org.h2.Driver
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+jwt:
+  secret-key: s4KJ29A0fslDkj3RnlqpsueuFFaw8fG3D2lgq9XsQak=
