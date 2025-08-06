@@ -1,9 +1,9 @@
 package com.example.pawgetherbe.controller;
 
 import com.example.pawgetherbe.config.OauthConfig;
-import com.example.pawgetherbe.controller.dto.UserDto;
+import com.example.pawgetherbe.controller.dto.UserDto.UserSignUpRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserRequest;
-import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserResponse;
+import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserResponseBody;
 import com.example.pawgetherbe.controller.dto.UserDto.OAuth2ResponseBody;
 import com.example.pawgetherbe.usecase.users.DeleteUserUseCase;
 import com.example.pawgetherbe.usecase.users.EditUserUseCase;
@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -55,7 +54,7 @@ public class AccountApi {
 
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
-    public void signup(@Validated @RequestBody UserDto.UserSignUpRequest signUpRequest){
+    public void signup(@Validated @RequestBody UserSignUpRequest signUpRequest){
         signUpWithIdUseCase.signUp(signUpRequest);
     }
 
@@ -67,9 +66,8 @@ public class AccountApi {
 
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteAccount(@RequestHeader(value = "Authorization", required = false) String accessHeader,
-                              @CookieValue(value = "refresh_token", required = false) String refreshToken) {
-        deleteUserUseCase.deleteAccount(accessHeader, refreshToken);
+    public void deleteAccount(@CookieValue(value = "refresh_token", required = false) String refreshToken) {
+        deleteUserUseCase.deleteAccount(refreshToken);
     }
 
     @PostMapping("/signup/email")
@@ -91,9 +89,25 @@ public class AccountApi {
     }
 
     @PatchMapping
-    public UpdateUserResponse updateUserInfo(@RequestBody UpdateUserRequest request,
-                                             @RequestHeader(value = "Authorization", required = false) String accessHeader) {
-       return editUserUseCase.updateUserInfo(request, accessHeader);
+    public ResponseEntity<UpdateUserResponseBody> updateUserInfo(@RequestBody UpdateUserRequest request,
+                                                                 @CookieValue(value = "refresh_token", required = false) String refreshToken) {
+        var updateUserResponse = editUserUseCase.updateUserInfo(request, refreshToken);
+
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", updateUserResponse.refreshToken())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(Duration.ofDays(7))
+//                .sameSite("Strict")
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(new UpdateUserResponseBody(
+                        updateUserResponse.accessToken(),
+                        updateUserResponse.userImg(),
+                        updateUserResponse.nickName()
+                ));
     }
 
     @GetMapping("/oauth/{provider}")

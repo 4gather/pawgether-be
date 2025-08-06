@@ -60,6 +60,9 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     @Override
     @Transactional
     public void signUp(UserSignUpRequest request) {
+        if(userRepository.existsByEmail(request.email())){
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 가입된 계정입니다");
+        }
         var userEntity = userMapper.toUserEntity(request);
         var userEntityBuilder = userEntity
                     .toBuilder()
@@ -86,7 +89,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     public void signupNicknameCheck(String nickname) {
         if(userRepository.existsByNickName(nickname)) {
             throw new ResponseStatusException(
-                    HttpStatus.CONFLICT, nickname + " 이미 가입된 계정입니다."
+                    HttpStatus.CONFLICT, nickname + " 이미 존재하는 닉네임입니다."
             );
         }
     }
@@ -165,8 +168,8 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     }
 
     @Override
-    public void deleteAccount(String accessHeader, String refreshToken) {
-        var id = jwtUtil.getUserIdFromToken(accessHeader);
+    public void deleteAccount(String refreshToken) {
+        var id = Long.valueOf(getUserId());
         var oauthCheck = oauthRepository.existsByUser_Id(id);
         if(oauthCheck) {
             oauthRepository.deleteByUser_Id(id);
@@ -181,18 +184,21 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     }
 
     @Override
-    public UpdateUserResponse updateUserInfo(UpdateUserRequest request, String accessHeader) {
+    public UpdateUserResponse updateUserInfo(UpdateUserRequest request, String refreshToken) {
         var id = getUserId();
         var user = userRepository.findById(Long.valueOf(id)).orElseThrow(() ->
             new ResponseStatusException(HttpStatus.NOT_FOUND, " 존재하지 않는 계정입니다.")
         );
-        user.updateProfile(request.nickname(), request.userImg());
 
+        user.updateProfile(request.nickname(), request.userImg());
+        redisTemplate.delete(refreshToken);
+
+        var newRefreshToken = generateRefreshToken();
         var accessToken = jwtUtil.generateAccessToken(
                 new UserAccessTokenDto(user.getId(), user.getRole())
         );
 
-        return new UpdateUserResponse(accessToken, user.getUserImg());
+        return new UpdateUserResponse(accessToken, newRefreshToken, request.userImg(), request.nickname());
     }
 
     public Map<String, String> getToken(UserEntity userEntity) {

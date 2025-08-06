@@ -1,6 +1,7 @@
 package com.example.pawgetherbe.controller.dto;
 
 import com.example.pawgetherbe.domain.status.UserRole;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -34,7 +35,16 @@ public final class UserDto {
 
     public record UpdateUserResponse(
             String accessToken,
-            String userImg
+            String refreshToken,
+            String userImg,
+            String nickName
+    ) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record UpdateUserResponseBody(
+            String accessToken,
+            String userImg,
+            String nickName
     ) {}
 
     public record Oauth2SignUpResponse(
