@@ -13,6 +13,14 @@ public final class UserDto {
             UserRole role
     ) {}
 
+    public record EmailCheckRequest(
+            String email
+    ) {}
+
+    public record NicknameCheckRequest(
+            String nickname
+    ) {}
+
     public record UserSignUpRequest(
             @NotNull(message = "닉네임을 입력해 주세요")
             @Pattern(regexp = "^[a-zA-Z0-9가-힣_]{3,20}$", message = "닉네임은 영문, 숫자, 한글, 언더바(_)만 사용할 수 있습니다.")

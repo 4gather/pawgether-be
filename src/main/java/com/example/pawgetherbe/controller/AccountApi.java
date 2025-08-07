@@ -1,6 +1,8 @@
 package com.example.pawgetherbe.controller;
 
 import com.example.pawgetherbe.config.OauthConfig;
+import com.example.pawgetherbe.controller.dto.UserDto.EmailCheckRequest;
+import com.example.pawgetherbe.controller.dto.UserDto.NicknameCheckRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.UserSignUpRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserResponseBody;
@@ -72,7 +74,8 @@ public class AccountApi {
 
     @PostMapping("/signup/email")
     @ResponseStatus(HttpStatus.OK)
-    public void signupEmailCheck(@RequestBody String email){
+    public void signupEmailCheck(@RequestBody EmailCheckRequest emailCheckRequest) {
+        var email = emailCheckRequest.email();
         if (!isValidEmail(email)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "email 형식을 지켜주세요");
         }
@@ -81,7 +84,8 @@ public class AccountApi {
 
     @PostMapping("/signup/nickname")
     @ResponseStatus(HttpStatus.OK)
-    public void signupNicknameCheck(@RequestBody String nickname){
+    public void signupNicknameCheck(@RequestBody NicknameCheckRequest nicknameCheckRequest){
+        var nickname = nicknameCheckRequest.nickname();
         if (!isValidNickName(nickname)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "nickname 은 3~20자의 영문, 숫자, 한글, 언더바(_)만 사용할 수 있습니다.");
         }
