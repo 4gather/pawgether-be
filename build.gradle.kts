@@ -79,6 +79,7 @@ dependencies {
     testImplementation("io.kotest:kotest-assertions-core:5.8.1")
     testImplementation("io.kotest:kotest-framework-engine:5.8.1")
     testImplementation("io.kotest.extensions:kotest-extensions-spring:1.1.3")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
 }
 
 kotlin{
@@ -103,7 +104,7 @@ tasks.withType<KotlinCompile> {
 tasks.withType<JavaCompile> {
     options.compilerArgs.addAll(listOf(
         "--enable-preview",
-        "-Amapstruct.defaultComponentModel=spring",
+        "-Amapstruct.defaultComponentModel=spring"
     ))
 }
 

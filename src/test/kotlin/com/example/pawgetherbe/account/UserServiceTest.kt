@@ -1,4 +1,4 @@
-package account
+package com.example.pawgetherbe.account
 import com.example.pawgetherbe.config.OauthConfig
 import com.example.pawgetherbe.controller.dto.UserDto
 import com.example.pawgetherbe.controller.dto.UserDto.UserSignUpRequest
