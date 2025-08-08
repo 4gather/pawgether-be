@@ -26,6 +26,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
+import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.patch
@@ -33,8 +34,11 @@ import org.springframework.web.server.ResponseStatusException
 
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension::class)
-@WebMvcTest(AccountApi::class)
-@Import(AccountApiTest.InternalMockConfig::class)
+@WebMvcTest(controllers = [AccountApi::class])
+@ContextConfiguration(classes = [
+    AccountApi::class,
+    AccountApiTest.InternalMockConfig::class
+])
 class AccountApiTest {
 
     @Autowired
@@ -110,7 +114,8 @@ class AccountApiTest {
 
     @Test
     fun `(2xx) 닉네임 중복체크`() {
-        val nickname = UserDto.NicknameCheckRequest("nickname_123")
+        val nickname =
+            UserDto.NickNameCheckRequest("nickname_123")
         mockMvc.post("/api/v1/account/signup/nickname") {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(nickname)
@@ -121,7 +126,7 @@ class AccountApiTest {
 
     @Test
     fun `(4xx) 닉네임 중복 체크 실패 - 잘못된 형식`() {
-        val request = UserDto.NicknameCheckRequest("**")
+        val request = UserDto.NickNameCheckRequest("**")
 
         mockMvc.post("/api/v1/account/signup/nickname") {
             contentType = MediaType.APPLICATION_JSON
