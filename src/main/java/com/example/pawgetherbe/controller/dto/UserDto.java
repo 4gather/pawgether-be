@@ -17,14 +17,14 @@ public final class UserDto {
             String email
     ) {}
 
-    public record NicknameCheckRequest(
-            String nickname
+    public record NickNameCheckRequest(
+            String nickName
     ) {}
 
     public record UserSignUpRequest(
             @NotNull(message = "닉네임을 입력해 주세요")
             @Pattern(regexp = "^[a-zA-Z0-9가-힣_]{3,20}$", message = "닉네임은 영문, 숫자, 한글, 언더바(_)만 사용할 수 있습니다.")
-            String nickname,
+            String nickName,
             @NotNull(message = "이메일을 입력해 주세요")
             @Email(message = "이메일 형식을 지켜주세요")
             String email,
@@ -37,7 +37,7 @@ public final class UserDto {
             ) {}
     public record UpdateUserRequest(
             @Pattern(regexp = "^[a-zA-Z0-9가-힣_]{3,20}$", message = "닉네임은 영문, 숫자, 한글, 언더바(_)만 사용할 수 있습니다.")
-            String nickname,
+            String nickName,
             String userImg
     ) {}
 
@@ -60,7 +60,7 @@ public final class UserDto {
             String refreshToken,
             String provider,
             String email,
-            String nickname,
+            String nickName,
             String userImg
     ) {}
 

@@ -2,7 +2,7 @@ package com.example.pawgetherbe.controller;
 
 import com.example.pawgetherbe.config.OauthConfig;
 import com.example.pawgetherbe.controller.dto.UserDto.EmailCheckRequest;
-import com.example.pawgetherbe.controller.dto.UserDto.NicknameCheckRequest;
+import com.example.pawgetherbe.controller.dto.UserDto.NickNameCheckRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.UserSignUpRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserResponseBody;
@@ -84,12 +84,12 @@ public class AccountApi {
 
     @PostMapping("/signup/nickname")
     @ResponseStatus(HttpStatus.OK)
-    public void signupNicknameCheck(@RequestBody NicknameCheckRequest nicknameCheckRequest){
-        var nickname = nicknameCheckRequest.nickname();
-        if (!isValidNickName(nickname)) {
+    public void signupNickNameCheck(@RequestBody NickNameCheckRequest nickNameCheckRequest){
+        var nickName = nickNameCheckRequest.nickName();
+        if (!isValidNickName(nickName)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "nickname 은 3~20자의 영문, 숫자, 한글, 언더바(_)만 사용할 수 있습니다.");
         }
-        signUpWithIdUseCase.signupNicknameCheck(nickname);
+        signUpWithIdUseCase.signupNicknameCheck(nickName);
     }
 
     @PatchMapping
@@ -153,7 +153,7 @@ public class AccountApi {
                         oauth2SignUpResponse.accessToken(),
                         oauth2SignUpResponse.provider(),
                         oauth2SignUpResponse.email(),
-                        oauth2SignUpResponse.nickname(),
+                        oauth2SignUpResponse.nickName(),
                         oauth2SignUpResponse.userImg()
                 ));
     }
