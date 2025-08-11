@@ -41,16 +41,8 @@ public final class UserDto {
             String userImg
     ) {}
 
-    public record UpdateUserResponse(
-            String accessToken,
-            String refreshToken,
-            String userImg,
-            String nickName
-    ) {}
-
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record UpdateUserResponseBody(
-            String accessToken,
+    public record UpdateUserResponse(
             String userImg,
             String nickName
     ) {}

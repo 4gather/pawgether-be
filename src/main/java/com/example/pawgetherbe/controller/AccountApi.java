@@ -1,11 +1,11 @@
 package com.example.pawgetherbe.controller;
 
 import com.example.pawgetherbe.config.OauthConfig;
+import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserResponse;
 import com.example.pawgetherbe.controller.dto.UserDto.EmailCheckRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.NickNameCheckRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.UserSignUpRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserRequest;
-import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserResponseBody;
 import com.example.pawgetherbe.controller.dto.UserDto.OAuth2ResponseBody;
 import com.example.pawgetherbe.usecase.users.DeleteUserUseCase;
 import com.example.pawgetherbe.usecase.users.EditUserUseCase;
@@ -62,13 +62,13 @@ public class AccountApi {
 
     @GetMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void logout(@CookieValue(value = "refresh_token", required = false) String refreshToken) {
+    public void logout(@CookieValue(value = "refresh_token") String refreshToken) {
         signOutUseCase.signOut(refreshToken);
     }
 
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteAccount(@CookieValue(value = "refresh_token", required = false) String refreshToken) {
+    public void deleteAccount(@CookieValue(value = "refresh_token") String refreshToken) {
         deleteUserUseCase.deleteAccount(refreshToken);
     }
 
@@ -93,25 +93,10 @@ public class AccountApi {
     }
 
     @PatchMapping
-    public ResponseEntity<UpdateUserResponseBody> updateUserInfo(@RequestBody UpdateUserRequest request,
-                                                                 @CookieValue(value = "refresh_token", required = false) String refreshToken) {
-        var updateUserResponse = editUserUseCase.updateUserInfo(request, refreshToken);
+    public UpdateUserResponse updateUserInfo(@RequestBody UpdateUserRequest request) {
+        var updateUserResponse = editUserUseCase.updateUserInfo(request);
 
-        ResponseCookie cookie = ResponseCookie.from("refresh_token", updateUserResponse.refreshToken())
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .maxAge(Duration.ofDays(7))
-//                .sameSite("Strict")
-                .build();
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(new UpdateUserResponseBody(
-                        updateUserResponse.accessToken(),
-                        updateUserResponse.userImg(),
-                        updateUserResponse.nickName()
-                ));
+        return updateUserResponse;
     }
 
     @GetMapping("/oauth/{provider}")

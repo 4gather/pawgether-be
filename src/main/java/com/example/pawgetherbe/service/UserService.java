@@ -186,22 +186,15 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
 
     @Override
     @Transactional
-    public UpdateUserResponse updateUserInfo(UpdateUserRequest request, String refreshToken) {
+    public UpdateUserResponse updateUserInfo(UpdateUserRequest request) {
         var id = getUserId();
         var user = userRepository.findById(Long.valueOf(id)).orElseThrow(() ->
             new ResponseStatusException(HttpStatus.NOT_FOUND, " 존재하지 않는 계정입니다.")
         );
 
         user.updateProfile(request.nickName(), request.userImg());
-        redisTemplate.delete(refreshToken);
 
-        var newRefreshToken = generateRefreshToken();
-        redisTemplate.opsForValue().set(newRefreshToken, String.valueOf(user.getId()), Duration.ofDays(7));
-        var accessToken = jwtUtil.generateAccessToken(
-                new UserAccessTokenDto(user.getId(), user.getRole())
-        );
-
-        return new UpdateUserResponse(accessToken, newRefreshToken, request.userImg(), request.nickName());
+        return new UpdateUserResponse(request.userImg(), request.nickName());
     }
 
     public Map<String, String> getToken(UserEntity userEntity) {
