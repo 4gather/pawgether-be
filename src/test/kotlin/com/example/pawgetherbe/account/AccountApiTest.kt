@@ -158,10 +158,8 @@ class AccountApiTest {
     fun `(2xx) 유저 정보 수정`() {
         val request = UserDto.UpdateUserRequest("newNick", "img.jpg")
 
-        whenever(editUserUseCase.updateUserInfo(any(), any())).thenReturn(
+        whenever(editUserUseCase.updateUserInfo(any())).thenReturn(
             UserDto.UpdateUserResponse(
-                "access123",
-                "refresh123",
                 "img.jpg",
                 "newNick"
             )
@@ -170,10 +168,8 @@ class AccountApiTest {
         mockMvc.patch("/api/v1/account") {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
-            cookie(Cookie("refresh_token", "refresh123"))
         }.andExpect {
             status { isOk() }
-            jsonPath("$.accessToken") { value("access123") }
             jsonPath("$.userImg") { value("img.jpg") }
             jsonPath("$.nickName") { value("newNick") }
         }
@@ -183,7 +179,7 @@ class AccountApiTest {
     fun `(4xx) 유저 정보 수정 실패 - 파라미터 없음`() {
         val request = UserDto.UpdateUserRequest("newNick", "img.jpg")
 
-        whenever(editUserUseCase.updateUserInfo(any(), any()))
+        whenever(editUserUseCase.updateUserInfo(any()))
             .thenThrow(
                 ResponseStatusException(HttpStatus.NOT_FOUND, " 존재하지 않는 계정입니다.")
             )
@@ -191,7 +187,6 @@ class AccountApiTest {
         mockMvc.patch("/api/v1/account") {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(request)
-            cookie(Cookie("refresh_token", "refresh123"))
         }.andExpect {
             status { isNotFound() }
         }

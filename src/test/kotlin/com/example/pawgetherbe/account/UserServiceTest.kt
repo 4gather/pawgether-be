@@ -221,7 +221,6 @@ class UserServiceTest: FreeSpec({
 
             val newNickname = "newNick"
             val newUserImg = "newImgUrl"
-            val refreshToken = "refreshToken123"
             val id = UserContext.getUserId().toLong()
             val user = UserEntity.builder()
                 .id(1L)
@@ -236,25 +235,14 @@ class UserServiceTest: FreeSpec({
             every { userRepository.findById(id) } returns Optional.of(user)
             every { jwtUtil.generateAccessToken(any()) } returns "newAccessToken"
             every { EncryptUtil.generateRefreshToken() } returns "newRefreshToken"
-            every { redisTemplate.delete(refreshToken) } returns true
 
             val result = userService.updateUserInfo(
                 UserDto.UpdateUserRequest(newNickname, newUserImg),
-                refreshToken
             )
             verify {
                 userRepository.findById(id)
                 user.updateProfile(newNickname, newUserImg)
-                redisTemplate.delete(refreshToken)
-                jwtUtil.generateAccessToken(
-                    withArg { dto ->
-                        dto.id shouldBe user.id
-                        dto.role shouldBe user.role
-                    }
-                )
             }
-            result.accessToken shouldBe "newAccessToken"
-            result.refreshToken shouldBe "newRefreshToken"
             result.userImg shouldBe newUserImg
             result.nickName shouldBe newNickname
         }
@@ -273,7 +261,6 @@ class UserServiceTest: FreeSpec({
             val exception = shouldThrow<ResponseStatusException> {
                 userService.updateUserInfo(
                     UserDto.UpdateUserRequest(newNickname, newUserImg),
-                    refreshToken
                 )
             }
 
