@@ -60,6 +60,9 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     @Override
     @Transactional
     public void signUp(UserSignUpRequest request) {
+        if(userRepository.existsByEmail(request.email())){
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 가입된 계정입니다");
+        }
         var userEntity = userMapper.toUserEntity(request);
         var userEntityBuilder = userEntity
                     .toBuilder()
@@ -83,10 +86,10 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
 
     @Override
     @Transactional(readOnly = true)
-    public void signupNicknameCheck(String nickname) {
-        if(userRepository.existsByNickName(nickname)) {
+    public void signupNicknameCheck(String nickName) {
+        if(userRepository.existsByNickName(nickName)) {
             throw new ResponseStatusException(
-                    HttpStatus.CONFLICT, nickname + " 이미 가입된 계정입니다."
+                    HttpStatus.CONFLICT, nickName + " 이미 존재하는 닉네임입니다."
             );
         }
     }
@@ -98,10 +101,10 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
         Map<String, Object> userInfo = fetchOAuthUserInfo(provider, code);
 
         String email = (String) userInfo.get("email");
-        String nickname = (String) userInfo.get("nickname");
+        String nickName = (String) userInfo.get("nickname");
         String providerId = (String) userInfo.get("providerId");
         log.info("email = {}", email);
-        log.info("nickname = {}", nickname);
+        log.info("nickName = {}", nickName);
         log.info("providerId = {}", providerId);
 
         var oauthCheck = oauthRepository.existsByOauthProviderIdAndOauthProvider(providerId, provider);
@@ -125,18 +128,18 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
                     token.get("refreshToken"),
                     null,
                     email,
-                    nickname,
+                    nickName,
                     user.getUserImg()
             );
         } else if (oauthCheck){
             user = oauthRepository.findByOauthProviderId(providerId).get().getUser();
         }else {
-            if (userRepository.existsByNickName(nickname)){
-                nickname = UUID.randomUUID().toString().substring(0, 8);
+            if (userRepository.existsByNickName(nickName)){
+                nickName = UUID.randomUUID().toString().substring(0, 8);
             }
             UserEntity newUser = UserEntity.builder()
                     .email(email)
-                    .nickName(nickname)
+                    .nickName(nickName)
                     .password(passwordEncode(UUID.randomUUID().toString().substring(0, 8))) // 랜덤 값
                     .status(UserStatus.ACTIVE)
                     .role(UserRole.USER_AUTH)
@@ -165,8 +168,9 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     }
 
     @Override
-    public void deleteAccount(String accessHeader, String refreshToken) {
-        var id = jwtUtil.getUserIdFromToken(accessHeader);
+    @Transactional
+    public void deleteAccount(String refreshToken) {
+        var id = Long.valueOf(getUserId());
         var oauthCheck = oauthRepository.existsByUser_Id(id);
         if(oauthCheck) {
             oauthRepository.deleteByUser_Id(id);
@@ -181,18 +185,16 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     }
 
     @Override
-    public UpdateUserResponse updateUserInfo(UpdateUserRequest request, String accessHeader) {
+    @Transactional
+    public UpdateUserResponse updateUserInfo(UpdateUserRequest request) {
         var id = getUserId();
         var user = userRepository.findById(Long.valueOf(id)).orElseThrow(() ->
             new ResponseStatusException(HttpStatus.NOT_FOUND, " 존재하지 않는 계정입니다.")
         );
-        user.updateProfile(request.nickname(), request.userImg());
 
-        var accessToken = jwtUtil.generateAccessToken(
-                new UserAccessTokenDto(user.getId(), user.getRole())
-        );
+        user.updateProfile(request.nickName(), request.userImg());
 
-        return new UpdateUserResponse(accessToken, user.getUserImg());
+        return new UpdateUserResponse(request.userImg(), request.nickName());
     }
 
     public Map<String, String> getToken(UserEntity userEntity) {
@@ -244,14 +246,14 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
             return switch (provider) {
                 case "google" -> Map.of(
                         "email", root.path("email").asText(),
-                        "nickname", root.path("name").asText(),
+                        "nickname", root.path("nickname").asText(),
                         "providerId", root.path("sub").asText()
                 );
                 case "naver" -> {
                     JsonNode naverResponse = root.path("response");
                     yield Map.of(
                             "email", naverResponse.path("email").asText(),
-                            "nickname", naverResponse.path("name").asText(),
+                            "nickname", naverResponse.path("nickname").asText(),
                             "providerId", naverResponse.path("id").asText()
                     );
                 }

@@ -1,9 +1,11 @@
 package com.example.pawgetherbe.controller;
 
 import com.example.pawgetherbe.config.OauthConfig;
-import com.example.pawgetherbe.controller.dto.UserDto;
-import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserResponse;
+import com.example.pawgetherbe.controller.dto.UserDto.EmailCheckRequest;
+import com.example.pawgetherbe.controller.dto.UserDto.NickNameCheckRequest;
+import com.example.pawgetherbe.controller.dto.UserDto.UserSignUpRequest;
+import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.OAuth2ResponseBody;
 import com.example.pawgetherbe.usecase.users.DeleteUserUseCase;
 import com.example.pawgetherbe.usecase.users.EditUserUseCase;
@@ -25,7 +27,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -55,26 +56,26 @@ public class AccountApi {
 
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
-    public void signup(@Validated @RequestBody UserDto.UserSignUpRequest signUpRequest){
+    public void signup(@Validated @RequestBody UserSignUpRequest signUpRequest){
         signUpWithIdUseCase.signUp(signUpRequest);
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void logout(@CookieValue(value = "refresh_token", required = false) String refreshToken) {
+    public void logout(@CookieValue(value = "refresh_token") String refreshToken) {
         signOutUseCase.signOut(refreshToken);
     }
 
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteAccount(@RequestHeader(value = "Authorization", required = false) String accessHeader,
-                              @CookieValue(value = "refresh_token", required = false) String refreshToken) {
-        deleteUserUseCase.deleteAccount(accessHeader, refreshToken);
+    public void deleteAccount(@CookieValue(value = "refresh_token") String refreshToken) {
+        deleteUserUseCase.deleteAccount(refreshToken);
     }
 
     @PostMapping("/signup/email")
     @ResponseStatus(HttpStatus.OK)
-    public void signupEmailCheck(@RequestBody String email){
+    public void signupEmailCheck(@RequestBody EmailCheckRequest emailCheckRequest) {
+        var email = emailCheckRequest.email();
         if (!isValidEmail(email)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "email 형식을 지켜주세요");
         }
@@ -83,17 +84,19 @@ public class AccountApi {
 
     @PostMapping("/signup/nickname")
     @ResponseStatus(HttpStatus.OK)
-    public void signupNicknameCheck(@RequestBody String nickname){
-        if (!isValidNickName(nickname)) {
+    public void signupNickNameCheck(@RequestBody NickNameCheckRequest nickNameCheckRequest){
+        var nickName = nickNameCheckRequest.nickName();
+        if (!isValidNickName(nickName)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "nickname 은 3~20자의 영문, 숫자, 한글, 언더바(_)만 사용할 수 있습니다.");
         }
-        signUpWithIdUseCase.signupNicknameCheck(nickname);
+        signUpWithIdUseCase.signupNicknameCheck(nickName);
     }
 
     @PatchMapping
-    public UpdateUserResponse updateUserInfo(@RequestBody UpdateUserRequest request,
-                                             @RequestHeader(value = "Authorization", required = false) String accessHeader) {
-       return editUserUseCase.updateUserInfo(request, accessHeader);
+    public UpdateUserResponse updateUserInfo(@RequestBody UpdateUserRequest request) {
+        var updateUserResponse = editUserUseCase.updateUserInfo(request);
+
+        return updateUserResponse;
     }
 
     @GetMapping("/oauth/{provider}")
@@ -135,7 +138,7 @@ public class AccountApi {
                         oauth2SignUpResponse.accessToken(),
                         oauth2SignUpResponse.provider(),
                         oauth2SignUpResponse.email(),
-                        oauth2SignUpResponse.nickname(),
+                        oauth2SignUpResponse.nickName(),
                         oauth2SignUpResponse.userImg()
                 ));
     }
