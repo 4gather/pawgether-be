@@ -369,7 +369,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
         // case2] refresh token 만료 X: 갱신 로직
         UserEntity user= userRepository.findById(userId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "로그인을 진행해주세요.")
-        );;
+        );
 
         String renewAccessToken = jwtUtil.generateAccessToken(userMapper.toAccessTokenDto(userId, userRole));
         String renewRefreshToken = EncryptUtil.generateRefreshToken();
