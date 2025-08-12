@@ -81,7 +81,7 @@ public final class UserDto {
         String accessToken,
         String provider,
         String email,
-        String nickname,
+        String nickName,
         String userImg
     ) {}
 
@@ -90,7 +90,7 @@ public final class UserDto {
             String refreshToken,
             String provider,
             String email,
-            String nickname,
+            String nickName,
             String userImg
     ) {}
 }

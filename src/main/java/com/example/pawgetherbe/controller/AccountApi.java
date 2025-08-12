@@ -169,7 +169,7 @@ public class AccountApi {
                         user.accessToken(),
                         user.provider(),
                         user.email(),
-                        user.nickname(),
+                        user.nickName(),
                         user.userImg()
                 ));
     }
