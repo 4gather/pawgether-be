@@ -10,6 +10,7 @@ import com.example.pawgetherbe.controller.dto.UserDto.SignInUserWithRefreshToken
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserResponse;
 import com.example.pawgetherbe.controller.dto.UserDto.UserSignUpRequest;
+import com.example.pawgetherbe.usecase.jwt.RefreshUseCase;
 import com.example.pawgetherbe.usecase.users.DeleteUserUseCase;
 import com.example.pawgetherbe.usecase.users.EditUserUseCase;
 import com.example.pawgetherbe.usecase.users.SignInUseCase;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -41,7 +43,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Map;
 
+import static com.example.pawgetherbe.common.filter.JwtAuthFilter.REQUEST_HEADER_AUTH;
 import static com.example.pawgetherbe.service.UserService.REFRESH_TOKEN_VALIDITY_SECONDS;
 import static com.example.pawgetherbe.util.ValidationUtil.isValidEmail;
 import static com.example.pawgetherbe.util.ValidationUtil.isValidNickName;
@@ -58,6 +62,7 @@ public class AccountApi {
     private final SignOutUseCase signOutUseCase;
     private final EditUserUseCase editUserUseCase;
     private final SignInUseCase signInUseCase;
+    private final RefreshUseCase refreshUseCase;
 
     private final OauthConfig oauthConfig;
 
@@ -167,6 +172,20 @@ public class AccountApi {
                         user.nickname(),
                         user.userImg()
                 ));
+    }
+
+    @PostMapping("/refresh")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<String> refresh(@RequestHeader(REQUEST_HEADER_AUTH) String authHeader,
+                                          @CookieValue(name = "refreshToken") String refreshToken) {
+
+        Map<String, String> authTokens = refreshUseCase.refresh(authHeader, refreshToken);
+
+        ResponseCookie refreshTokenCookieHeader = buildRefreshTokenCookieHeader(authTokens.get("refreshToken"));
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookieHeader.toString())
+                .body(authTokens.get("accessToken"));
     }
 
     private ResponseCookie buildRefreshTokenCookieHeader(String refreshToken) {

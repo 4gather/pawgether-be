@@ -20,8 +20,9 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthFilter implements Filter {
 
-    private static final String REQUEST_HEADER_AUTH = "Authorization";
-    private static final String AUTH_BEARER = "Bearer ";
+    public static final String AUTH_BEARER = "Bearer ";
+    public static final String REQUEST_HEADER_AUTH = "Authorization";
+
     private static final String CONTENT_TYPE_JSON = "application/json";
     private static final String CHARSET_ENCODING_UTF8 = "UTF-8";
 

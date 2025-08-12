@@ -11,11 +11,13 @@ import com.example.pawgetherbe.controller.dto.UserDto.Oauth2SignUpResponse;
 import com.example.pawgetherbe.controller.dto.UserDto.UserSignUpRequest;
 import com.example.pawgetherbe.domain.entity.OauthEntity;
 import com.example.pawgetherbe.domain.entity.UserEntity;
+import com.example.pawgetherbe.domain.status.AccessTokenStatus;
 import com.example.pawgetherbe.domain.status.UserRole;
 import com.example.pawgetherbe.domain.status.UserStatus;
 import com.example.pawgetherbe.mapper.UserMapper;
 import com.example.pawgetherbe.repository.OauthRepository;
 import com.example.pawgetherbe.repository.UserRepository;
+import com.example.pawgetherbe.usecase.jwt.RefreshUseCase;
 import com.example.pawgetherbe.usecase.users.DeleteUserUseCase;
 import com.example.pawgetherbe.usecase.users.EditUserUseCase;
 import com.example.pawgetherbe.usecase.users.SignInUseCase;
@@ -44,6 +46,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.example.pawgetherbe.common.filter.JwtAuthFilter.AUTH_BEARER;
 import static com.example.pawgetherbe.domain.UserContext.getUserId;
 import static com.example.pawgetherbe.util.EncryptUtil.generateRefreshToken;
 import static com.example.pawgetherbe.util.EncryptUtil.passwordEncode;
@@ -52,7 +55,7 @@ import static com.example.pawgetherbe.util.EncryptUtil.passwordEncode;
 @Service
 @RequiredArgsConstructor
 public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase, DeleteUserUseCase, SignOutUseCase, EditUserUseCase,
-        SignInUseCase {
+        SignInUseCase, RefreshUseCase {
 
     private final UserRepository userRepository;
     private final OauthRepository oauthRepository;
@@ -342,7 +345,46 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
         return userMapper.toSignInWithRefreshToken(userEntity, accessToken, refreshToken);
     }
 
+    @Override
+    public Map<String, String> refresh(String authHeader, String refreshToken) {
+
+        if (!authHeader.startsWith(AUTH_BEARER)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "다시 로그인을 진행해주세요.");
+        }
+
+        String accessToken = authHeader.substring(AUTH_BEARER.length());
+
+        if (jwtUtil.validateToken(accessToken).equals(AccessTokenStatus.INVALID)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "다시 로그인을 진행해주세요.");
+        }
+
+        // case1] refresh token 만료: 재로그인
+        if (!isValidRefreshToken(refreshToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인을 진행해주세요.");
+        }
+
+        Long userId = jwtUtil.getUserIdFromToken(accessToken);
+        String userRole = jwtUtil.getUserRoleFromToken(accessToken);
+
+        // case2] refresh token 만료 X: 갱신 로직
+        UserEntity user= userRepository.findById(userId).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "로그인을 진행해주세요.")
+        );;
+
+        String renewAccessToken = jwtUtil.generateAccessToken(userMapper.toAccessTokenDto(userId, userRole));
+        String renewRefreshToken = EncryptUtil.generateRefreshToken();
+
+        return Map.of(
+                "accessToken", renewAccessToken,
+                "refreshToken", renewRefreshToken
+        );
+    }
+
     private boolean isMatchedPassword(String plainPassword, String encryptPassword) {
         return EncryptUtil.matches(plainPassword, encryptPassword);
+    }
+
+    private boolean isValidRefreshToken(String refreshToken) {
+        return redisTemplate.opsForValue().get(refreshToken) != null;
     }
 }
