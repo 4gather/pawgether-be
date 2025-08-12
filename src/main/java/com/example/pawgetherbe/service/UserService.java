@@ -2,6 +2,8 @@ package com.example.pawgetherbe.service;
 
 import com.example.pawgetherbe.common.oauth.OAuthProviderSpec;
 import com.example.pawgetherbe.config.OauthConfig;
+import com.example.pawgetherbe.controller.dto.UserDto.SignInUserRequest;
+import com.example.pawgetherbe.controller.dto.UserDto.SignInUserWithRefreshTokenResponse;
 import com.example.pawgetherbe.controller.dto.UserDto.UserAccessTokenDto;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserResponse;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserRequest;
@@ -9,16 +11,20 @@ import com.example.pawgetherbe.controller.dto.UserDto.Oauth2SignUpResponse;
 import com.example.pawgetherbe.controller.dto.UserDto.UserSignUpRequest;
 import com.example.pawgetherbe.domain.entity.OauthEntity;
 import com.example.pawgetherbe.domain.entity.UserEntity;
+import com.example.pawgetherbe.domain.status.AccessTokenStatus;
 import com.example.pawgetherbe.domain.status.UserRole;
 import com.example.pawgetherbe.domain.status.UserStatus;
 import com.example.pawgetherbe.mapper.UserMapper;
 import com.example.pawgetherbe.repository.OauthRepository;
 import com.example.pawgetherbe.repository.UserRepository;
+import com.example.pawgetherbe.usecase.jwt.RefreshUseCase;
 import com.example.pawgetherbe.usecase.users.DeleteUserUseCase;
 import com.example.pawgetherbe.usecase.users.EditUserUseCase;
+import com.example.pawgetherbe.usecase.users.SignInUseCase;
 import com.example.pawgetherbe.usecase.users.SignOutUseCase;
 import com.example.pawgetherbe.usecase.users.SignUpWithIdUseCase;
 import com.example.pawgetherbe.usecase.users.SignUpWithOauthUseCase;
+import com.example.pawgetherbe.util.EncryptUtil;
 import com.example.pawgetherbe.util.JwtUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +46,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.example.pawgetherbe.common.filter.JwtAuthFilter.AUTH_BEARER;
 import static com.example.pawgetherbe.domain.UserContext.getUserId;
 import static com.example.pawgetherbe.util.EncryptUtil.generateRefreshToken;
 import static com.example.pawgetherbe.util.EncryptUtil.passwordEncode;
@@ -47,7 +54,8 @@ import static com.example.pawgetherbe.util.EncryptUtil.passwordEncode;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase, DeleteUserUseCase, SignOutUseCase, EditUserUseCase {
+public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase, DeleteUserUseCase, SignOutUseCase, EditUserUseCase,
+        SignInUseCase, RefreshUseCase {
 
     private final UserRepository userRepository;
     private final OauthRepository oauthRepository;
@@ -56,6 +64,8 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
 
     private final JwtUtil jwtUtil;
     private final OauthConfig oauthConfig;
+
+    public static final int REFRESH_TOKEN_VALIDITY_SECONDS = 7 * 24 * 60 * 60; // 7일
 
     @Override
     @Transactional
@@ -308,4 +318,73 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
 //                "providerId", root.path("id").asText()
 //        );
 //    }
+
+    @Override
+    @Transactional
+    public SignInUserWithRefreshTokenResponse signIn(SignInUserRequest signInRequest) {
+
+        UserEntity userEntity = userRepository.findByEmail(signInRequest.email());
+
+        // 회원 존재 유무 체크
+        if (userEntity == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 계정입니다.");
+        }
+
+        // password 유효성 확인
+        if (!isMatchedPassword(signInRequest.password(), userEntity.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다.");
+        }
+
+        // access token 발급
+        String accessToken = jwtUtil.generateAccessToken(new UserAccessTokenDto(userEntity.getId(), userEntity.getRole()));
+
+        // refresh token 발급
+        String refreshToken = EncryptUtil.generateRefreshToken();
+        redisTemplate.opsForValue().set(refreshToken, String.valueOf(userEntity.getId()), Duration.ofDays(REFRESH_TOKEN_VALIDITY_SECONDS));
+
+        return userMapper.toSignInWithRefreshToken(userEntity, accessToken, refreshToken);
+    }
+
+    @Override
+    public Map<String, String> refresh(String authHeader, String refreshToken) {
+
+        if (!authHeader.startsWith(AUTH_BEARER)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "다시 로그인을 진행해주세요.");
+        }
+
+        String accessToken = authHeader.substring(AUTH_BEARER.length());
+
+        if (jwtUtil.validateToken(accessToken).equals(AccessTokenStatus.INVALID)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "다시 로그인을 진행해주세요.");
+        }
+
+        // case1] refresh token 만료: 재로그인
+        if (!isValidRefreshToken(refreshToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인을 진행해주세요.");
+        }
+
+        Long userId = jwtUtil.getUserIdFromToken(accessToken);
+        String userRole = jwtUtil.getUserRoleFromToken(accessToken);
+
+        // case2] refresh token 만료 X: 갱신 로직
+        UserEntity user= userRepository.findById(userId).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "로그인을 진행해주세요.")
+        );
+
+        String renewAccessToken = jwtUtil.generateAccessToken(userMapper.toAccessTokenDto(userId, userRole));
+        String renewRefreshToken = EncryptUtil.generateRefreshToken();
+
+        return Map.of(
+                "accessToken", renewAccessToken,
+                "refreshToken", renewRefreshToken
+        );
+    }
+
+    private boolean isMatchedPassword(String plainPassword, String encryptPassword) {
+        return EncryptUtil.matches(plainPassword, encryptPassword);
+    }
+
+    private boolean isValidRefreshToken(String refreshToken) {
+        return redisTemplate.opsForValue().get(refreshToken) != null;
+    }
 }
