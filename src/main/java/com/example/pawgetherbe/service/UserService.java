@@ -2,6 +2,8 @@ package com.example.pawgetherbe.service;
 
 import com.example.pawgetherbe.common.oauth.OAuthProviderSpec;
 import com.example.pawgetherbe.config.OauthConfig;
+import com.example.pawgetherbe.controller.dto.UserDto.SignInUserRequest;
+import com.example.pawgetherbe.controller.dto.UserDto.SignInUserWithRefreshTokenResponse;
 import com.example.pawgetherbe.controller.dto.UserDto.UserAccessTokenDto;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserResponse;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserRequest;
@@ -16,9 +18,11 @@ import com.example.pawgetherbe.repository.OauthRepository;
 import com.example.pawgetherbe.repository.UserRepository;
 import com.example.pawgetherbe.usecase.users.DeleteUserUseCase;
 import com.example.pawgetherbe.usecase.users.EditUserUseCase;
+import com.example.pawgetherbe.usecase.users.SignInUseCase;
 import com.example.pawgetherbe.usecase.users.SignOutUseCase;
 import com.example.pawgetherbe.usecase.users.SignUpWithIdUseCase;
 import com.example.pawgetherbe.usecase.users.SignUpWithOauthUseCase;
+import com.example.pawgetherbe.util.EncryptUtil;
 import com.example.pawgetherbe.util.JwtUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,7 +51,8 @@ import static com.example.pawgetherbe.util.EncryptUtil.passwordEncode;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase, DeleteUserUseCase, SignOutUseCase, EditUserUseCase {
+public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase, DeleteUserUseCase, SignOutUseCase, EditUserUseCase,
+        SignInUseCase {
 
     private final UserRepository userRepository;
     private final OauthRepository oauthRepository;
@@ -56,6 +61,8 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
 
     private final JwtUtil jwtUtil;
     private final OauthConfig oauthConfig;
+
+    public static final int REFRESH_TOKEN_VALIDITY_SECONDS = 7 * 24 * 60 * 60; // 7일
 
     @Override
     @Transactional
@@ -308,4 +315,34 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
 //                "providerId", root.path("id").asText()
 //        );
 //    }
+
+    @Override
+    @Transactional
+    public SignInUserWithRefreshTokenResponse signIn(SignInUserRequest signInRequest) {
+
+        UserEntity userEntity = userRepository.findByEmail(signInRequest.email());
+
+        // 회원 존재 유무 체크
+        if (userEntity == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 계정입니다.");
+        }
+
+        // password 유효성 확인
+        if (!isMatchedPassword(signInRequest.password(), userEntity.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다.");
+        }
+
+        // access token 발급
+        String accessToken = jwtUtil.generateAccessToken(new UserAccessTokenDto(userEntity.getId(), userEntity.getRole()));
+
+        // refresh token 발급
+        String refreshToken = EncryptUtil.generateRefreshToken();
+        redisTemplate.opsForValue().set(refreshToken, String.valueOf(userEntity.getId()), Duration.ofDays(REFRESH_TOKEN_VALIDITY_SECONDS));
+
+        return userMapper.toSignInWithRefreshToken(userEntity, accessToken, refreshToken);
+    }
+
+    private boolean isMatchedPassword(String plainPassword, String encryptPassword) {
+        return EncryptUtil.matches(plainPassword, encryptPassword);
+    }
 }
