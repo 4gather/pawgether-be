@@ -1,5 +1,6 @@
 package com.example.pawgetherbe.service;
 
+import com.example.pawgetherbe.common.exceptionHandler.CustomException;
 import com.example.pawgetherbe.common.oauth.OAuthProviderSpec;
 import com.example.pawgetherbe.config.OauthConfig;
 import com.example.pawgetherbe.controller.dto.UserDto.SignInUserRequest;
@@ -46,6 +47,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.CONFLICT_EMAIL;
+import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.CONFLICT_NICKNAME;
+import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.DUPLICATE_EMAIL;
 import static com.example.pawgetherbe.common.filter.JwtAuthFilter.AUTH_BEARER;
 import static com.example.pawgetherbe.domain.UserContext.getUserId;
 import static com.example.pawgetherbe.util.EncryptUtil.generateRefreshToken;
@@ -88,9 +92,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     @Transactional(readOnly = true)
     public void signupEmailCheck(String email) {
         if (userRepository.existsByEmail(email)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT, email + " 이미 가입된 계정입니다."
-            );
+            throw new CustomException(CONFLICT_NICKNAME);
         }
     }
 
@@ -98,9 +100,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     @Transactional(readOnly = true)
     public void signupNicknameCheck(String nickName) {
         if(userRepository.existsByNickName(nickName)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT, nickName + " 이미 존재하는 닉네임입니다."
-            );
+            throw new CustomException(CONFLICT_EMAIL);
         }
     }
 
