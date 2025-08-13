@@ -1,5 +1,6 @@
 package com.example.pawgetherbe.controller;
 
+import com.example.pawgetherbe.common.exceptionHandler.CustomException;
 import com.example.pawgetherbe.config.OauthConfig;
 import com.example.pawgetherbe.controller.dto.UserDto.EmailCheckRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.NickNameCheckRequest;
@@ -10,6 +11,7 @@ import com.example.pawgetherbe.controller.dto.UserDto.SignInUserWithRefreshToken
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserRequest;
 import com.example.pawgetherbe.controller.dto.UserDto.UpdateUserResponse;
 import com.example.pawgetherbe.controller.dto.UserDto.UserSignUpRequest;
+import com.example.pawgetherbe.mapper.UserMapper;
 import com.example.pawgetherbe.usecase.jwt.RefreshUseCase;
 import com.example.pawgetherbe.usecase.users.DeleteUserUseCase;
 import com.example.pawgetherbe.usecase.users.EditUserUseCase;
@@ -38,13 +40,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.Map;
 
+import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.DUPLICATE_EMAIL;
+import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.DUPLICATE_NICKNAME;
+import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.OAUTH_PROVIDER_NOT_SUPPORTED;
 import static com.example.pawgetherbe.common.filter.JwtAuthFilter.REQUEST_HEADER_AUTH;
 import static com.example.pawgetherbe.service.UserService.REFRESH_TOKEN_VALIDITY_SECONDS;
 import static com.example.pawgetherbe.util.ValidationUtil.isValidEmail;
@@ -64,6 +67,7 @@ public class AccountApi {
     private final SignInUseCase signInUseCase;
     private final RefreshUseCase refreshUseCase;
 
+    private final UserMapper userMapper;
     private final OauthConfig oauthConfig;
 
     private static final String SAME_SITE_STRICT = "Strict";
@@ -91,7 +95,7 @@ public class AccountApi {
     public void signupEmailCheck(@RequestBody EmailCheckRequest emailCheckRequest) {
         var email = emailCheckRequest.email();
         if (!isValidEmail(email)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "email 형식을 지켜주세요");
+            throw new CustomException(DUPLICATE_EMAIL);
         }
         signUpWithIdUseCase.signupEmailCheck(email);
     }
@@ -101,7 +105,7 @@ public class AccountApi {
     public void signupNickNameCheck(@RequestBody NickNameCheckRequest nickNameCheckRequest){
         var nickName = nickNameCheckRequest.nickName();
         if (!isValidNickName(nickName)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "nickname 은 3~20자의 영문, 숫자, 한글, 언더바(_)만 사용할 수 있습니다.");
+            throw new CustomException(DUPLICATE_NICKNAME);
         }
         signUpWithIdUseCase.signupNicknameCheck(nickName);
     }
@@ -117,7 +121,7 @@ public class AccountApi {
     public void redirectToProvider(@PathVariable String provider, HttpServletResponse response) throws IOException {
         var providerProps = oauthConfig.getProviders().get(provider);
         if (providerProps == null) {
-            throw new IllegalArgumentException("Unknown OAuth provider: " + provider);
+            throw new CustomException(OAUTH_PROVIDER_NOT_SUPPORTED);
         }
 
         String redirectUrl = UriComponentsBuilder
@@ -138,23 +142,11 @@ public class AccountApi {
             @RequestParam String code) {
         var oauth2SignUpResponse = signUpWithOauthUseCase.oauthSignUp(provider,code);
 
-        ResponseCookie cookie = ResponseCookie.from("refresh_token", oauth2SignUpResponse.refreshToken())
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .maxAge(Duration.ofDays(7))
-//                .sameSite("Strict")
-                .build();
+        ResponseCookie cookie = buildRefreshTokenCookieHeader(oauth2SignUpResponse.refreshToken());
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(new OAuth2ResponseBody(
-                        oauth2SignUpResponse.accessToken(),
-                        oauth2SignUpResponse.provider(),
-                        oauth2SignUpResponse.email(),
-                        oauth2SignUpResponse.nickName(),
-                        oauth2SignUpResponse.userImg()
-                ));
+                .body(userMapper.toOAuth2ResponseBody(oauth2SignUpResponse));
     }
 
     @PostMapping
@@ -165,13 +157,7 @@ public class AccountApi {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookieHeader.toString())
-                .body(new SignInUserResponse(
-                        user.accessToken(),
-                        user.provider(),
-                        user.email(),
-                        user.nickName(),
-                        user.userImg()
-                ));
+                .body(userMapper.toSignInUserResponse(user));
     }
 
     @PostMapping("/refresh")

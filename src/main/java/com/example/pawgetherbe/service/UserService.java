@@ -37,10 +37,8 @@ import com.github.scribejava.core.model.Verb;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -49,7 +47,11 @@ import java.util.UUID;
 
 import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.CONFLICT_EMAIL;
 import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.CONFLICT_NICKNAME;
-import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.DUPLICATE_EMAIL;
+import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.CONFLICT_USER;
+import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.NOT_FOUND_USER;
+import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.OAUTH_PROVIDER_NOT_SUPPORTED;
+import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.UNAUTHORIZED_LOGIN;
+import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.UNAUTHORIZED_PASSWORD;
 import static com.example.pawgetherbe.common.filter.JwtAuthFilter.AUTH_BEARER;
 import static com.example.pawgetherbe.domain.UserContext.getUserId;
 import static com.example.pawgetherbe.util.EncryptUtil.generateRefreshToken;
@@ -75,7 +77,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     @Transactional
     public void signUp(UserSignUpRequest request) {
         if(userRepository.existsByEmail(request.email())){
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 가입된 계정입니다");
+            throw new CustomException(CONFLICT_USER);
         }
         var userEntity = userMapper.toUserEntity(request);
         var userEntityBuilder = userEntity
@@ -92,7 +94,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     @Transactional(readOnly = true)
     public void signupEmailCheck(String email) {
         if (userRepository.existsByEmail(email)) {
-            throw new CustomException(CONFLICT_NICKNAME);
+            throw new CustomException(CONFLICT_EMAIL);
         }
     }
 
@@ -100,7 +102,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     @Transactional(readOnly = true)
     public void signupNicknameCheck(String nickName) {
         if(userRepository.existsByNickName(nickName)) {
-            throw new CustomException(CONFLICT_EMAIL);
+            throw new CustomException(CONFLICT_NICKNAME);
         }
     }
 
@@ -133,14 +135,11 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
             var token = getToken(user);
             user.updateRole(UserRole.USER_BOTH);
 
-            return new Oauth2SignUpResponse(
-                    token.get("accessToken"),
-                    token.get("refreshToken"),
+            return userMapper.toOauth2SignUpResponse(
+                    user,
                     null,
-                    email,
-                    nickName,
-                    user.getUserImg()
-            );
+                    token.get("accessToken"),
+                    token.get("refreshToken"));
         } else if (oauthCheck){
             user = oauthRepository.findByOauthProviderId(providerId).get().getUser();
         }else {
@@ -167,13 +166,11 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
 
         var token = getToken(user);
 
-        return new Oauth2SignUpResponse(
-                token.get("accessToken"),
-                token.get("refreshToken"),
+        return userMapper.toOauth2SignUpResponse(
+                user,
                 provider,
-                user.getEmail(),
-                user.getNickName(),
-                user.getUserImg()
+                token.get("accessToken"),
+                token.get("refreshToken")
         );
     }
 
@@ -199,12 +196,12 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     public UpdateUserResponse updateUserInfo(UpdateUserRequest request) {
         var id = getUserId();
         var user = userRepository.findById(Long.valueOf(id)).orElseThrow(() ->
-            new ResponseStatusException(HttpStatus.NOT_FOUND, " 존재하지 않는 계정입니다.")
+            new CustomException(NOT_FOUND_USER)
         );
 
         user.updateProfile(request.nickName(), request.userImg());
 
-        return new UpdateUserResponse(request.userImg(), request.nickName());
+        return userMapper.toUpdateUserResponse(request);
     }
 
     public Map<String, String> getToken(UserEntity userEntity) {
@@ -227,7 +224,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
         var oauth = oauthConfig.getProviders().get(provider);
 
         if (oauth == null) {
-            throw new IllegalArgumentException("지원하지 않는 oauth2: " + provider);
+            throw new CustomException(OAUTH_PROVIDER_NOT_SUPPORTED);
         }
         log.info("getClientId = {}", oauth.getClientId());
         log.info("clientSecret = {}", oauth.getClientSecret());
@@ -267,7 +264,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
                             "providerId", naverResponse.path("id").asText()
                     );
                 }
-                default -> throw new IllegalArgumentException("Unsupported provider: " + provider);
+                default -> throw new CustomException(OAUTH_PROVIDER_NOT_SUPPORTED);
             };
 
         }catch (Exception e) {
@@ -327,12 +324,12 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
 
         // 회원 존재 유무 체크
         if (userEntity == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 계정입니다.");
+            throw new CustomException(NOT_FOUND_USER);
         }
 
         // password 유효성 확인
         if (!isMatchedPassword(signInRequest.password(), userEntity.getPassword())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다.");
+            throw new CustomException(UNAUTHORIZED_PASSWORD);
         }
 
         // access token 발급
@@ -349,18 +346,18 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
     public Map<String, String> refresh(String authHeader, String refreshToken) {
 
         if (!authHeader.startsWith(AUTH_BEARER)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "다시 로그인을 진행해주세요.");
+            throw new CustomException(UNAUTHORIZED_LOGIN);
         }
 
         String accessToken = authHeader.substring(AUTH_BEARER.length());
 
         if (jwtUtil.validateToken(accessToken).equals(AccessTokenStatus.INVALID)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "다시 로그인을 진행해주세요.");
+            throw new CustomException(UNAUTHORIZED_LOGIN);
         }
 
         // case1] refresh token 만료: 재로그인
         if (!isValidRefreshToken(refreshToken)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인을 진행해주세요.");
+            throw new CustomException(UNAUTHORIZED_LOGIN);
         }
 
         Long userId = jwtUtil.getUserIdFromToken(accessToken);
@@ -368,7 +365,7 @@ public class UserService implements SignUpWithIdUseCase, SignUpWithOauthUseCase,
 
         // case2] refresh token 만료 X: 갱신 로직
         UserEntity user= userRepository.findById(userId).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "로그인을 진행해주세요.")
+                () -> new CustomException(NOT_FOUND_USER)
         );
 
         String renewAccessToken = jwtUtil.generateAccessToken(userMapper.toAccessTokenDto(userId, userRole));

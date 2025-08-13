@@ -4,12 +4,18 @@ import com.example.pawgetherbe.common.exceptionHandler.ErrorCode;
 import org.springframework.http.HttpStatus;
 
 public enum UserCommandErrorCode implements ErrorCode {
-    INVALID_PASSWORD(HttpStatus.UNAUTHORIZED,"INVALID_PASSWORD","아이디 또는 비밀번호가 올바르지 않습니다."),
+    UNAUTHORIZED_PASSWORD(HttpStatus.UNAUTHORIZED,"UNAUTHORIZED_PASSWORD","아이디 또는 비밀번호가 올바르지 않습니다."),
+    UNAUTHORIZED_LOGIN(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED_LOGIN", "다시 로그인을 진행해주세요."),
+
     NOT_FOUND_USER(HttpStatus.NOT_FOUND,"NOT_FOUND_USER","존재하지 않는 계정입니다."),
+
     DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, "DUPLICATE_EMAIL", "email 형식을 지켜주세요"),
     DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "DUPLICATE_NICKNAME", "nickname 은 형식을 지켜주세요"),
+    OAUTH_PROVIDER_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "OAUTH_PROVIDER_NOT_SUPPORTED", "지원하지 않는 OAuth2 입니다."),
+
     CONFLICT_EMAIL(HttpStatus.CONFLICT, "CONFLICT_EMAIL", "이미 존재하는 Email 입니다."),
-    CONFLICT_NICKNAME(HttpStatus.CONFLICT, "CONFLICT_NICKNAME", "이미 존재하는 NickName 입니다.")
+    CONFLICT_NICKNAME(HttpStatus.CONFLICT, "CONFLICT_NICKNAME", "이미 존재하는 NickName 입니다."),
+    CONFLICT_USER(HttpStatus.CONFLICT, "CONFLICT_USER", "이미 가입된 계정입니다")
     ;
 
     private final String message;
