@@ -1,8 +1,8 @@
 package com.example.pawgetherbe.common.filter;
 
+import com.example.pawgetherbe.common.exceptionHandler.dto.ErrorResponseDto;
 import com.example.pawgetherbe.domain.UserContext;
 import com.example.pawgetherbe.domain.status.AccessTokenStatus;
-import com.example.pawgetherbe.exception.ApiErrorResponse;
 import com.example.pawgetherbe.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.Filter;
@@ -84,7 +84,7 @@ public class JwtAuthFilter implements Filter {
         response.setContentType(CONTENT_TYPE_JSON);
         response.setCharacterEncoding(CHARSET_ENCODING_UTF8);
 
-        ApiErrorResponse errorResponse = new ApiErrorResponse(statusValue, code, message);
+        ErrorResponseDto errorResponse = new ErrorResponseDto(statusValue, code, message);
 
         response.getWriter().write(
                 new ObjectMapper().writeValueAsString(errorResponse)

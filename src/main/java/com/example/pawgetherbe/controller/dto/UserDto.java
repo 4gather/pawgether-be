@@ -56,8 +56,8 @@ public final class UserDto {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record UpdateUserResponse(
-            String userImg,
-            String nickName
+            String nickName,
+            String userImg
     ) {}
 
     public record Oauth2SignUpResponse(

@@ -1,5 +1,6 @@
 package com.example.pawgetherbe.account
 
+import com.example.pawgetherbe.common.exceptionHandler.GlobalExceptionHandler
 import com.example.pawgetherbe.config.OauthConfig
 import com.example.pawgetherbe.controller.AccountApi
 import com.example.pawgetherbe.controller.dto.UserDto
@@ -39,6 +40,7 @@ import org.springframework.web.server.ResponseStatusException
     AccountApi::class,
     AccountApiTest.InternalMockConfig::class
 ])
+@Import(GlobalExceptionHandler::class)
 class AccountApiTest {
 
     @Autowired
@@ -57,7 +59,11 @@ class AccountApiTest {
         @Bean fun deleteUserUseCase(): DeleteUserUseCase = mock()
         @Bean fun signOutUseCase(): SignOutUseCase = mock()
         @Bean fun editUserUseCase(): EditUserUseCase = mock()
+        @Bean fun signInUseCase(): com.example.pawgetherbe.usecase.users.SignInUseCase = mock()
+        @Bean fun refreshUseCase(): com.example.pawgetherbe.usecase.jwt.RefreshUseCase = mock()
+        @Bean fun userMapper(): com.example.pawgetherbe.mapper.UserMapper = mock()
         @Bean fun oauthConfig(): OauthConfig = mock()
+
     }
 
 
@@ -160,8 +166,8 @@ class AccountApiTest {
 
         whenever(editUserUseCase.updateUserInfo(any())).thenReturn(
             UserDto.UpdateUserResponse(
-                "img.jpg",
-                "newNick"
+                "newNick",
+                "img.jpg"
             )
         )
 

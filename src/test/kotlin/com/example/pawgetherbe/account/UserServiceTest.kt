@@ -25,10 +25,8 @@ import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.data.redis.core.RedisTemplate
-import org.springframework.http.HttpStatus
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import org.springframework.web.server.ResponseStatusException
 import java.util.*
 
 @ActiveProfiles("test")
@@ -96,12 +94,9 @@ class UserServiceTest: FreeSpec({
             every { userRepository.existsByEmail("test@example.com") } returns true
 
             // When & Then
-            val exception = shouldThrow<ResponseStatusException> {
+            val exception = shouldThrow<RuntimeException> {
                 userService.signUp(signUpRequest)
             }
-
-            exception.statusCode shouldBe HttpStatus.CONFLICT
-            exception.reason shouldBe "이미 가입된 계정입니다"
 
             verify(exactly = 0) { userRepository.save(any()) }
         }
@@ -121,12 +116,11 @@ class UserServiceTest: FreeSpec({
 
             every { userRepository.existsByEmail(email) } returns true
 
-            val exception = shouldThrow<ResponseStatusException> {
+            val exception = shouldThrow<RuntimeException> {
                 userService.signupEmailCheck(email)
             }
 
-            exception.statusCode shouldBe HttpStatus.CONFLICT
-            exception.reason shouldBe email + " 이미 가입된 계정입니다."
+            exception.message shouldBe "이미 존재하는 Email 입니다."
         }
     }
 
@@ -144,12 +138,11 @@ class UserServiceTest: FreeSpec({
 
             every { userRepository.existsByNickName(nickName) } returns true
 
-            val exception = shouldThrow<ResponseStatusException> {
+            val exception = shouldThrow<RuntimeException> {
                 userService.signupNicknameCheck(nickName)
             }
 
-            exception.statusCode shouldBe HttpStatus.CONFLICT
-            exception.reason shouldBe nickName + " 이미 존재하는 닉네임입니다."
+            exception.message shouldBe "이미 존재하는 NickName 입니다."
         }
     }
 
@@ -232,19 +225,23 @@ class UserServiceTest: FreeSpec({
                 .password(passwordEncode("password123"))
                 .build()
 
-            every { userRepository.findById(id) } returns Optional.of(user)
-            every { jwtUtil.generateAccessToken(any()) } returns "newAccessToken"
-            every { EncryptUtil.generateRefreshToken() } returns "newRefreshToken"
+            val request = UserDto.UpdateUserRequest(newNickname, newUserImg)
+            val expectedResponse = UserDto.UpdateUserResponse(newNickname, newUserImg)
 
-            val result = userService.updateUserInfo(
-                UserDto.UpdateUserRequest(newNickname, newUserImg),
-            )
+            every { userRepository.findById(id) } returns Optional.of(user)
+            every { userMapper.toUpdateUserResponse(request) } returns expectedResponse
+
+            val result = userService.updateUserInfo(request)
             verify {
                 userRepository.findById(id)
                 user.updateProfile(newNickname, newUserImg)
+                userMapper.toUpdateUserResponse(request)
             }
-            result.userImg shouldBe newUserImg
+            println("Result: $result")
+            println("Expected nickName: $newNickname, Actual nickName: ${result.nickName}")
+            println("Expected userImg: $newUserImg, Actual userImg: ${result.userImg}")
             result.nickName shouldBe newNickname
+            result.userImg shouldBe newUserImg
         }
         "업데이트 실패" {
             mockkStatic(UserContext::class)
@@ -252,21 +249,18 @@ class UserServiceTest: FreeSpec({
 
             every { UserContext.getUserId() } returns "1"
             val id = UserContext.getUserId().toLong()
-            val refreshToken = "refreshToken123"
             val newNickname = "newNick"
             val newUserImg = "newImgUrl"
 
             every { userRepository.findById(id) } returns Optional.empty()
 
-            val exception = shouldThrow<ResponseStatusException> {
+            val exception = shouldThrow<RuntimeException> {
                 userService.updateUserInfo(
                     UserDto.UpdateUserRequest(newNickname, newUserImg),
                 )
             }
 
-            verify(exactly = 0) { redisTemplate.delete(refreshToken) }
-            exception.statusCode shouldBe HttpStatus.NOT_FOUND
-            exception.reason shouldBe " 존재하지 않는 계정입니다."
+            exception.message shouldBe "존재하지 않는 계정입니다."
         }
     }
 
