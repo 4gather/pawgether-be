@@ -19,8 +19,6 @@ public interface UserMapper {
     OAuth2ResponseBody toOAuth2ResponseBody(Oauth2SignUpResponse oauth2SignUpResponse);
     Oauth2SignUpResponse toOauth2SignUpResponse(UserEntity userEntity,String provider, String accessToken, String refreshToken);
     SignInUserResponse toSignInUserResponse(SignInUserWithRefreshTokenResponse response);
-    
-    @org.mapstruct.Mapping(target = "userImg", source = "userImg")
-    @org.mapstruct.Mapping(target = "nickName", source = "nickName")
+
     UpdateUserResponse toUpdateUserResponse(UpdateUserRequest request);
 }

@@ -45,9 +45,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.util.Map;
 
-import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.DUPLICATE_EMAIL;
-import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.DUPLICATE_NICKNAME;
-import static com.example.pawgetherbe.common.exception.UserCommandErrorCode.OAUTH_PROVIDER_NOT_SUPPORTED;
+import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.INVALID_FORMAT_EMAIL;
+import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.INVALID_FORMAT_NICKNAME;
+import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.OAUTH_PROVIDER_NOT_SUPPORTED;
 import static com.example.pawgetherbe.common.filter.JwtAuthFilter.REQUEST_HEADER_AUTH;
 import static com.example.pawgetherbe.service.UserService.REFRESH_TOKEN_VALIDITY_SECONDS;
 import static com.example.pawgetherbe.util.ValidationUtil.isValidEmail;
@@ -95,7 +95,7 @@ public class AccountApi {
     public void signupEmailCheck(@RequestBody EmailCheckRequest emailCheckRequest) {
         var email = emailCheckRequest.email();
         if (!isValidEmail(email)) {
-            throw new CustomException(DUPLICATE_EMAIL);
+            throw new CustomException(INVALID_FORMAT_EMAIL);
         }
         signUpWithIdUseCase.signupEmailCheck(email);
     }
@@ -105,7 +105,7 @@ public class AccountApi {
     public void signupNickNameCheck(@RequestBody NickNameCheckRequest nickNameCheckRequest){
         var nickName = nickNameCheckRequest.nickName();
         if (!isValidNickName(nickName)) {
-            throw new CustomException(DUPLICATE_NICKNAME);
+            throw new CustomException(INVALID_FORMAT_NICKNAME);
         }
         signUpWithIdUseCase.signupNicknameCheck(nickName);
     }

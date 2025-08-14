@@ -1,4 +1,4 @@
-package com.example.pawgetherbe.common.exception;
+package com.example.pawgetherbe.exception.query;
 
 import com.example.pawgetherbe.common.exceptionHandler.ErrorCode;
 import org.springframework.http.HttpStatus;
