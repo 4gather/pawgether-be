@@ -1,15 +1,15 @@
 package com.example.pawgetherbe.account
 import com.example.pawgetherbe.config.OauthConfig
-import com.example.pawgetherbe.controller.dto.UserDto
-import com.example.pawgetherbe.controller.dto.UserDto.UserSignUpRequest
+import com.example.pawgetherbe.controller.command.dto.UserCommandDto
+import com.example.pawgetherbe.controller.command.dto.UserCommandDto.UserSignUpRequest
 import com.example.pawgetherbe.domain.UserContext
 import com.example.pawgetherbe.domain.entity.UserEntity
 import com.example.pawgetherbe.domain.status.UserRole
 import com.example.pawgetherbe.domain.status.UserStatus
-import com.example.pawgetherbe.mapper.UserMapper
-import com.example.pawgetherbe.repository.OauthRepository
-import com.example.pawgetherbe.repository.UserRepository
-import com.example.pawgetherbe.service.UserService
+import com.example.pawgetherbe.mapper.command.UserCommandMapper
+import com.example.pawgetherbe.repository.command.OauthCommandRepository
+import com.example.pawgetherbe.repository.command.UserCommandRepository
+import com.example.pawgetherbe.service.command.UserCommandService
 import com.example.pawgetherbe.util.EncryptUtil
 import com.example.pawgetherbe.util.EncryptUtil.passwordEncode
 import com.example.pawgetherbe.util.JwtUtil
@@ -31,14 +31,14 @@ import java.util.*
 
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension::class)
-class UserServiceTest: FreeSpec({
-    lateinit var userRepository: UserRepository
-    lateinit var oauthRepository: OauthRepository
-    lateinit var userMapper: UserMapper
+class UserCommandServiceTest: FreeSpec({
+    lateinit var userCommandRepository: UserCommandRepository
+    lateinit var oauthCommandRepository: OauthCommandRepository
+    lateinit var userCommandMapper: UserCommandMapper
     lateinit var redisTemplate: RedisTemplate<String, String>
     lateinit var jwtUtil: JwtUtil
     lateinit var oauthConfig: OauthConfig
-    lateinit var userService: UserService
+    lateinit var userCommandService: UserCommandService
 
     "회원가입" - {
         "정상적으로 가입" {
@@ -60,15 +60,15 @@ class UserServiceTest: FreeSpec({
                 .role(UserRole.USER_EMAIL)
                 .build()
 
-            every { userMapper.toUserEntity(signUpRequest) } returns entity
-            every { userRepository.save(any()) } returns savedEntity
+            every { userCommandMapper.toUserEntity(signUpRequest) } returns entity
+            every { userCommandRepository.save(any()) } returns savedEntity
 
             // When
-            userService.signUp(signUpRequest)
+            userCommandService.signUp(signUpRequest)
 
             // Then
             val slot = slot<UserEntity>()
-            verify { userRepository.save(capture(slot)) }
+            verify { userCommandRepository.save(capture(slot)) }
 
             val savedUser = slot.captured
             savedUser.email shouldBe "test@example.com"
@@ -90,59 +90,15 @@ class UserServiceTest: FreeSpec({
                 .password("password123")
                 .build()
 
-            every { userMapper.toUserEntity(signUpRequest) } returns entity
-            every { userRepository.existsByEmail("test@example.com") } returns true
+            every { userCommandMapper.toUserEntity(signUpRequest) } returns entity
+            every { userCommandRepository.existsByEmail("test@example.com") } returns true
 
             // When & Then
             val exception = shouldThrow<RuntimeException> {
-                userService.signUp(signUpRequest)
+                userCommandService.signUp(signUpRequest)
             }
 
-            verify(exactly = 0) { userRepository.save(any()) }
-        }
-    }
-
-    "이메일 중복 검사" - {
-        "이메일 중복되지 않을떄" {
-            val email = "test@example.com"
-
-            every { userRepository.existsByEmail(email) } returns false
-
-            userService.signupEmailCheck(email)
-        }
-
-        "중복 이메일이면 예외 발생" {
-            val email = "test@example.com"
-
-            every { userRepository.existsByEmail(email) } returns true
-
-            val exception = shouldThrow<RuntimeException> {
-                userService.signupEmailCheck(email)
-            }
-
-            exception.message shouldBe "이미 존재하는 Email 입니다."
-        }
-    }
-
-    "닉네임 중복 검사" - {
-        "닉네임이 중복되지 않을때" {
-            val nickName = "tester"
-
-            every { userRepository.existsByNickName(nickName) } returns false
-
-            userService.signupNicknameCheck(nickName)
-        }
-
-        "중복 닉네임이면 예외 발생" {
-            val nickName = "tester"
-
-            every { userRepository.existsByNickName(nickName) } returns true
-
-            val exception = shouldThrow<RuntimeException> {
-                userService.signupNicknameCheck(nickName)
-            }
-
-            exception.message shouldBe "이미 존재하는 NickName 입니다."
+            verify(exactly = 0) { userCommandRepository.save(any()) }
         }
     }
 
@@ -155,13 +111,13 @@ class UserServiceTest: FreeSpec({
             val refreshToken = "refreshToken123"
 
             every { UserContext.getUserId() } returns "1"
-            every { oauthRepository.existsByUser_Id(id) } returns false
-            every { userRepository.deleteById(id) } just Runs
+            every { oauthCommandRepository.existsByUser_Id(id) } returns false
+            every { userCommandRepository.deleteById(id) } just Runs
             every { redisTemplate.delete(refreshToken) } returns true
 
-            userService.deleteAccount(refreshToken)
+            userCommandService.deleteAccount(refreshToken)
 
-            verify { userRepository.deleteById(1L) }
+            verify { userCommandRepository.deleteById(1L) }
             verify { redisTemplate.delete(refreshToken) }
         }
 
@@ -172,15 +128,15 @@ class UserServiceTest: FreeSpec({
             val id = UserContext.getUserId().toLong()
             val refreshToken = "refreshToken123"
 
-            every { oauthRepository.existsByUser_Id(id) } returns true
-            every { oauthRepository.deleteByUser_Id(id) } just Runs
-            every { userRepository.deleteById(id) } just Runs
+            every { oauthCommandRepository.existsByUser_Id(id) } returns true
+            every { oauthCommandRepository.deleteByUser_Id(id) } just Runs
+            every { userCommandRepository.deleteById(id) } just Runs
             every { redisTemplate.delete(refreshToken) } returns true
 
-            userService.deleteAccount(refreshToken)
+            userCommandService.deleteAccount(refreshToken)
 
-            verify { oauthRepository.deleteByUser_Id(1L) }
-            verify { userRepository.deleteById(1L) }
+            verify { oauthCommandRepository.deleteByUser_Id(1L) }
+            verify { userCommandRepository.deleteById(1L) }
             verify { redisTemplate.delete(refreshToken) }
         }
     }
@@ -191,7 +147,7 @@ class UserServiceTest: FreeSpec({
 
             every { redisTemplate.delete(refreshToken) } returns true
 
-            userService.signOut(refreshToken)
+            userCommandService.signOut(refreshToken)
 
             verify { redisTemplate.delete(refreshToken) }
         }
@@ -199,7 +155,7 @@ class UserServiceTest: FreeSpec({
             val refreshToken = "refreshToken123"
             every { redisTemplate.delete(refreshToken) } returns false
 
-            userService.signOut(refreshToken)
+            userCommandService.signOut(refreshToken)
 
             verify { redisTemplate.delete(refreshToken) }
         }
@@ -225,17 +181,17 @@ class UserServiceTest: FreeSpec({
                 .password(passwordEncode("password123"))
                 .build()
 
-            val request = UserDto.UpdateUserRequest(newNickname, newUserImg)
-            val expectedResponse = UserDto.UpdateUserResponse(newNickname, newUserImg)
+            val request = UserCommandDto.UpdateUserRequest(newNickname, newUserImg)
+            val expectedResponse = UserCommandDto.UpdateUserResponse(newNickname, newUserImg)
 
-            every { userRepository.findById(id) } returns Optional.of(user)
-            every { userMapper.toUpdateUserResponse(request) } returns expectedResponse
+            every { userCommandRepository.findById(id) } returns Optional.of(user)
+            every { userCommandMapper.toUpdateUserResponse(request) } returns expectedResponse
 
-            val result = userService.updateUserInfo(request)
+            val result = userCommandService.updateUserInfo(request)
             verify {
-                userRepository.findById(id)
+                userCommandRepository.findById(id)
                 user.updateProfile(newNickname, newUserImg)
-                userMapper.toUpdateUserResponse(request)
+                userCommandMapper.toUpdateUserResponse(request)
             }
             println("Result: $result")
             println("Expected nickName: $newNickname, Actual nickName: ${result.nickName}")
@@ -252,11 +208,11 @@ class UserServiceTest: FreeSpec({
             val newNickname = "newNick"
             val newUserImg = "newImgUrl"
 
-            every { userRepository.findById(id) } returns Optional.empty()
+            every { userCommandRepository.findById(id) } returns Optional.empty()
 
             val exception = shouldThrow<RuntimeException> {
-                userService.updateUserInfo(
-                    UserDto.UpdateUserRequest(newNickname, newUserImg),
+                userCommandService.updateUserInfo(
+                    UserCommandDto.UpdateUserRequest(newNickname, newUserImg),
                 )
             }
 
@@ -265,20 +221,20 @@ class UserServiceTest: FreeSpec({
     }
 
     beforeTest {
-        userRepository = mockk(relaxed = true)
-        oauthRepository = mockk(relaxed = true)
-        userMapper = mockk(relaxed = true)
+        userCommandRepository = mockk(relaxed = true)
+        oauthCommandRepository = mockk(relaxed = true)
+        userCommandMapper = mockk(relaxed = true)
         redisTemplate = mockk(relaxed = true)
         jwtUtil = mockk(relaxed = true)
         oauthConfig = mockk(relaxed = true)
 
-        userService = UserService(
-            userRepository,
-            oauthRepository,
-            userMapper,
+        userCommandService = UserCommandService(
+            oauthCommandRepository,
+            userCommandRepository,
             redisTemplate,
             jwtUtil,
-            oauthConfig
+            oauthConfig,
+            userCommandMapper
         )
     }
 })
