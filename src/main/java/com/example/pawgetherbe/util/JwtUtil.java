@@ -1,6 +1,6 @@
 package com.example.pawgetherbe.util;
 
-import com.example.pawgetherbe.controller.dto.UserDto.UserAccessTokenDto;
+import com.example.pawgetherbe.controller.command.dto.UserCommandDto.UserAccessTokenDto;
 import com.example.pawgetherbe.domain.status.AccessTokenStatus;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
