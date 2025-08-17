@@ -3,7 +3,7 @@ package com.example.pawgetherbe.account
 import com.example.pawgetherbe.common.exceptionHandler.GlobalExceptionHandler
 import com.example.pawgetherbe.controller.query.AccountQueryApi
 import com.example.pawgetherbe.controller.query.dto.UserQueryDto
-import com.example.pawgetherbe.usecase.jwt.query.RefreshQueryUseCase
+import com.example.pawgetherbe.usecase.jwt.command.RefreshCommandUseCase
 import com.example.pawgetherbe.usecase.users.query.SignUpQueryUseCase
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.extension.ExtendWith
@@ -39,7 +39,7 @@ class AccountQueryApiTest {
 
     @TestConfiguration
     class InternalMockConfig {
-        @Bean fun refreshQueryUseCase(): RefreshQueryUseCase = mock()
+        @Bean fun refreshQueryUseCase(): RefreshCommandUseCase = mock()
         @Bean fun signUpQueryUseCase(): SignUpQueryUseCase = mock()
     }
 
