@@ -12,11 +12,13 @@ import com.example.pawgetherbe.controller.command.dto.UserCommandDto.UserAccessT
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.UserSignUpRequest;
 import com.example.pawgetherbe.domain.entity.OauthEntity;
 import com.example.pawgetherbe.domain.entity.UserEntity;
+import com.example.pawgetherbe.domain.status.AccessTokenStatus;
 import com.example.pawgetherbe.domain.status.UserRole;
 import com.example.pawgetherbe.domain.status.UserStatus;
 import com.example.pawgetherbe.mapper.command.UserCommandMapper;
 import com.example.pawgetherbe.repository.command.OauthCommandRepository;
 import com.example.pawgetherbe.repository.command.UserCommandRepository;
+import com.example.pawgetherbe.usecase.jwt.command.RefreshCommandUseCase;
 import com.example.pawgetherbe.usecase.users.command.DeleteUserCommandUseCase;
 import com.example.pawgetherbe.usecase.users.command.EditUserCommandUseCase;
 import com.example.pawgetherbe.usecase.users.command.SignInCommandUseCase;
@@ -36,16 +38,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.example.pawgetherbe.common.filter.JwtAuthFilter.AUTH_BEARER;
 import static com.example.pawgetherbe.domain.UserContext.getUserId;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.CONFLICT_USER;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.NOT_FOUND_USER;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.OAUTH_PROVIDER_NOT_SUPPORTED;
+import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.UNAUTHORIZED_LOGIN;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.UNAUTHORIZED_PASSWORD;
 import static com.example.pawgetherbe.util.EncryptUtil.generateRefreshToken;
 import static com.example.pawgetherbe.util.EncryptUtil.passwordEncode;
@@ -53,7 +58,7 @@ import static com.example.pawgetherbe.util.EncryptUtil.passwordEncode;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserCommandService implements SignUpCommandOauthUseCase, SignUpCommandUseCase, SignOutCommandUseCase, DeleteUserCommandUseCase, EditUserCommandUseCase, SignInCommandUseCase {
+public class UserCommandService implements SignUpCommandOauthUseCase, SignUpCommandUseCase, SignOutCommandUseCase, DeleteUserCommandUseCase, EditUserCommandUseCase, SignInCommandUseCase, RefreshCommandUseCase {
 
     private final OauthCommandRepository oauthCommandRepository;
     private final UserCommandRepository userCommandRepository;
@@ -265,6 +270,46 @@ public class UserCommandService implements SignUpCommandOauthUseCase, SignUpComm
         }catch (Exception e) {
             throw new RuntimeException("OAuth 처리 중 오류 발생", e);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, String> refresh(String authHeader, String refreshToken) {
+
+        if (!authHeader.startsWith(AUTH_BEARER)) {
+            throw new CustomException(UNAUTHORIZED_LOGIN);
+        }
+
+        String accessToken = authHeader.substring(AUTH_BEARER.length());
+
+        if (jwtUtil.validateToken(accessToken).equals(AccessTokenStatus.INVALID)) {
+            throw new CustomException(UNAUTHORIZED_LOGIN);
+        }
+
+        // case1] refresh token 만료: 재로그인
+        if (!isValidRefreshToken(refreshToken)) {
+            throw new CustomException(UNAUTHORIZED_LOGIN);
+        }
+
+        Long userId = jwtUtil.getUserIdFromToken(accessToken);
+        String userRole = jwtUtil.getUserRoleFromToken(accessToken);
+
+        // case2] refresh token 만료 X: 갱신 로직
+        UserEntity user = userCommandRepository.findById(userId).orElseThrow(
+                () -> new CustomException(NOT_FOUND_USER)
+        );
+
+        String renewAccessToken = jwtUtil.generateAccessToken(userCommandMapper.toAccessTokenDto(userId, userRole));
+        String renewRefreshToken = EncryptUtil.generateRefreshToken();
+
+        return Map.of(
+                "accessToken", renewAccessToken,
+                "refreshToken", renewRefreshToken
+        );
+    }
+
+    private boolean isValidRefreshToken(String refreshToken) {
+        return redisTemplate.opsForValue().get(refreshToken) != null;
     }
 
     private boolean isMatchedPassword(String plainPassword, String encryptPassword) {

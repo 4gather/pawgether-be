@@ -1,5 +1,6 @@
 package com.example.pawgetherbe.mapper.command;
 
+import com.example.pawgetherbe.controller.command.dto.UserCommandDto;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.OAuth2ResponseBody;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.Oauth2SignUpResponse;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.SignInUserResponse;
@@ -18,4 +19,5 @@ public interface UserCommandMapper {
     Oauth2SignUpResponse toOauth2SignUpResponse(UserEntity userEntity,String provider, String accessToken, String refreshToken);
     SignInUserResponse toSignInUserResponse(SignInUserWithRefreshTokenResponse response);
     UpdateUserResponse toUpdateUserResponse(UpdateUserRequest request);
+    UserCommandDto.UserAccessTokenDto toAccessTokenDto(Long userId, String userRole);
 }
