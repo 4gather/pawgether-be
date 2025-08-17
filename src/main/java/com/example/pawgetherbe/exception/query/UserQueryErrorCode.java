@@ -4,6 +4,8 @@ import com.example.pawgetherbe.common.exceptionHandler.ErrorCode;
 import org.springframework.http.HttpStatus;
 
 public enum UserQueryErrorCode implements ErrorCode {
+    INVALID_FORMAT_EMAIL(HttpStatus.BAD_REQUEST, "INVALID_FORMAT_EMAIL", "email 형식을 지켜주세요"),
+    INVALID_FORMAT_NICKNAME(HttpStatus.BAD_REQUEST, "INVALID_FORMAT_NICKNAME", "nickname 은 형식을 지켜주세요")
     ;
 
     private final String message;
