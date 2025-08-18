@@ -357,6 +357,64 @@ class UserServiceTest: FreeSpec({
         }
     }
 
+    "기능] 리프레시" - {
+        "2XX] 리프레시 성공" - {
+            // Given
+            val authHeader = "Bearer ThisIsValidAuthHeader"
+            val refreshToken = "RefreshToken"
+            val userAccessTokenDto = UserAccessTokenDto(1L, UserRole.USER_EMAIL)
+            val userEntity = UserEntity.builder()
+                .id(1L)
+                .email("testUser1@test.com")
+                .role(UserRole.USER_EMAIL)
+                .nickName("tester")
+                .userImg("/img/2025/05/05/202505.webp")
+                .build()
+
+            every { userMapper.toAccessTokenDto(any<Long>(), any<String>()) } returns userAccessTokenDto
+            every { jwtUtil.generateAccessToken(userAccessTokenDto) } returns "RenewAccessToken"
+            every { jwtUtil.getUserIdFromToken(any<String>()) } returns 1L
+            every { jwtUtil.getUserRoleFromToken(any<String>()) } returns "USER_EMAIL"
+            every { EncryptUtil.generateRefreshToken() } returns "RenewRefreshToken"
+            every { userRepository.findById(any<Long>()) } returns Optional.of(userEntity)
+
+            // When
+            val result = userService.refresh(authHeader, refreshToken)
+
+            // Then
+            "유효한 Access Token 재발급" {
+                result.get("accessToken") shouldBe "RenewAccessToken"
+            }
+            "유효한 Refresh Token 재발급" {
+                result.get("refreshToken") shouldBe "RenewRefreshToken"
+            }
+        }
+
+        "4XX] AuthHeader가 Bearer로 시작하지 않는 경우" - {
+            // Given
+
+            // When
+
+            // Then
+        }
+
+        "4XX] 변조된 Access Token인 경우" - {
+            // Given
+
+            // When
+
+            // Then
+        }
+
+        "4XX] refersh token이 만료된 경우" - {
+            // Given
+
+            // WHen
+
+            // Then
+        }
+    }
+
     beforeTest {
         userRepository = mockk(relaxed = true)
         oauthRepository = mockk(relaxed = true)
