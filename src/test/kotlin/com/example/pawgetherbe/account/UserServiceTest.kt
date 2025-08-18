@@ -1,7 +1,7 @@
 package com.example.pawgetherbe.account
 import com.example.pawgetherbe.config.OauthConfig
 import com.example.pawgetherbe.controller.dto.UserDto
-import com.example.pawgetherbe.controller.dto.UserDto.UserSignUpRequest
+    import com.example.pawgetherbe.controller.dto.UserDto.*
 import com.example.pawgetherbe.domain.UserContext
 import com.example.pawgetherbe.domain.entity.UserEntity
 import com.example.pawgetherbe.domain.status.UserRole
@@ -15,20 +15,17 @@ import com.example.pawgetherbe.util.EncryptUtil.passwordEncode
 import com.example.pawgetherbe.util.JwtUtil
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.shouldBe
-import io.mockk.Runs
-import io.mockk.every
-import io.mockk.just
-import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.slot
-import io.mockk.verify
+import io.kotest.matchers.shouldNotBe
+import io.mockk.*
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.server.ResponseStatusException
+import java.time.Duration
 import java.util.*
 
 @ActiveProfiles("test")
@@ -267,6 +264,96 @@ class UserServiceTest: FreeSpec({
             verify(exactly = 0) { redisTemplate.delete(refreshToken) }
             exception.statusCode shouldBe HttpStatus.NOT_FOUND
             exception.reason shouldBe " 존재하지 않는 계정입니다."
+        }
+    }
+
+    "기능] 로그인" - {
+        // Given
+        val encryptPassword = EncryptUtil.passwordEncode("testUser123!@#")
+        val savedRequest = SignInUserResponse("accessToken",
+            "Google",
+            "testUser1@test.com",
+            "tester",
+            "/img/2025/05/05/202505.webp")
+
+        "2XX] 로그인 성공" - {
+            // Given
+            val signInRequest = SignInUserRequest("testUser1@test.com", "testUser123!@#")
+            val userEntity = UserEntity.builder()
+                .id(1L)
+                .email("testUser1@test.com")
+                .password(encryptPassword)
+                .nickName("tester")
+                .userImg("/img/2025/05/05/202505.webp")
+                .build()
+            val signInWithRefreshToken = SignInUserWithRefreshTokenResponse(
+                "accessToken", "refreshToken", "Google", "testUser1@test.com", "tester", "/img/2025/05/05/202505.webp")
+            val userAccessTokenDto = UserAccessTokenDto(1L, UserRole.USER_EMAIL)
+
+            every { userRepository.findByEmail(signInRequest.email) } returns userEntity
+            every { redisTemplate.opsForValue().set(any<String>(), any<String>(), any<Duration>()) } just Runs
+            every { jwtUtil.generateAccessToken(userAccessTokenDto) } returns "accessToken"
+            every { userMapper.toSignInWithRefreshToken(userEntity, any(), any()) } returns signInWithRefreshToken
+
+            // When
+            val result = userService.signIn(signInRequest);
+
+            "회원 존재" {
+                result shouldNotBe null
+                result.email shouldBe signInRequest.email
+            }
+            "accessToken 정상 발급" {
+                result.accessToken shouldBe "accessToken"
+            }
+            "refreshToken 정상 발급" {
+                result.refreshToken shouldBe "refreshToken"
+            }
+//            "valkey를 이용한 refresh token 저장" {
+//                verify(exactly = 1) { redisTemplate.opsForValue().set("refreshToken", userEntity.id.toStr(), Duration.ofDays(7))}
+//            }
+        }
+
+        "4XX] 로그인 실패" - {
+            "입력한 email 계정 없음" {
+                // Given
+                val signInRequest = SignInUserRequest("inValidUser1@test.com", "testUser123!@#")
+
+                every { userRepository.findByEmail(signInRequest.email) } returns null
+
+                // When
+                val exception = shouldThrow<ResponseStatusException> {
+                    userService.signIn(signInRequest)
+                }
+
+                // Then
+                verify(exactly = 1) { userRepository.findByEmail(signInRequest.email) }
+
+                exception.statusCode shouldBeEqual HttpStatus.NOT_FOUND
+                exception.reason shouldBeEqual "존재하지 않는 계정입니다."
+            }
+            "틀린 패스워드를 입력한 경우" {
+                // Given
+                val signInRequest = SignInUserRequest("testUser1@test.com", "invalidPassword123!@#")
+                val userEntity = UserEntity.builder()
+                    .id(1L)
+                    .email("testUser1@test.com")
+                    .password(encryptPassword)
+                    .nickName("tester")
+                    .userImg("/img/2025/05/05/202505.webp")
+                    .build()
+
+                every { userRepository.findByEmail(signInRequest.email) } returns userEntity
+
+                // When
+                val exception = shouldThrow<ResponseStatusException> {
+                    userService.signIn(signInRequest)
+                }
+                // Then
+                verify(exactly = 1) { userRepository.findByEmail(signInRequest.email) }
+
+                exception.statusCode shouldBeEqual HttpStatus.UNAUTHORIZED
+                exception.reason shouldBeEqual "아이디 또는 비밀번호가 올바르지 않습니다."
+            }
         }
     }
 
