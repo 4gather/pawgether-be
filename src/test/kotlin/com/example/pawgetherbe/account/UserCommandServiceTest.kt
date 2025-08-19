@@ -1,9 +1,12 @@
 package com.example.pawgetherbe.account
+import com.example.pawgetherbe.common.exceptionHandler.CustomException
+import com.example.pawgetherbe.common.filter.JwtAuthFilter.AUTH_BEARER
 import com.example.pawgetherbe.config.OauthConfig
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto
-import com.example.pawgetherbe.controller.command.dto.UserCommandDto.UserSignUpRequest
+import com.example.pawgetherbe.controller.command.dto.UserCommandDto.*
 import com.example.pawgetherbe.domain.UserContext
 import com.example.pawgetherbe.domain.entity.UserEntity
+import com.example.pawgetherbe.domain.status.AccessTokenStatus
 import com.example.pawgetherbe.domain.status.UserRole
 import com.example.pawgetherbe.domain.status.UserStatus
 import com.example.pawgetherbe.mapper.command.UserCommandMapper
@@ -15,16 +18,13 @@ import com.example.pawgetherbe.util.EncryptUtil.passwordEncode
 import com.example.pawgetherbe.util.JwtUtil
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.shouldBe
-import io.mockk.Runs
-import io.mockk.every
-import io.mockk.just
-import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.slot
-import io.mockk.verify
+import io.kotest.matchers.shouldNotBe
+import io.mockk.*
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.http.HttpStatus
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.util.*
@@ -220,16 +220,16 @@ class UserCommandServiceTest: FreeSpec({
         }
     }
 
-    "기능] 로그인" - {
-        // Given
+    "로그인" - {
         val encryptPassword = EncryptUtil.passwordEncode("testUser123!@#")
-        val savedRequest = SignInUserResponse("accessToken",
+        val savedRequest = SignInUserResponse(
+            "accessToken",
             "Google",
             "testUser1@test.com",
             "tester",
-            "/img/2025/05/05/202505.webp")
-
-        "2XX] 로그인 성공" - {
+            "/img/2025/05/05/202505.webp"
+        )
+        "2xx] 정상 로그인" - {
             // Given
             val signInRequest = SignInUserRequest("testUser1@test.com", "testUser123!@#")
             val userEntity = UserEntity.builder()
@@ -240,16 +240,23 @@ class UserCommandServiceTest: FreeSpec({
                 .userImg("/img/2025/05/05/202505.webp")
                 .build()
             val signInWithRefreshToken = SignInUserWithRefreshTokenResponse(
-                "accessToken", "refreshToken", "Google", "testUser1@test.com", "tester", "/img/2025/05/05/202505.webp")
+                "accessToken", "refreshToken", "Google", "testUser1@test.com", "tester", "/img/2025/05/05/202505.webp"
+            )
             val userAccessTokenDto = UserAccessTokenDto(1L, UserRole.USER_EMAIL)
 
-            every { userRepository.findByEmail(signInRequest.email) } returns userEntity
-            every { redisTemplate.opsForValue().set(any<String>(), any<String>(), any<Duration>()) } just Runs
+            every { userCommandRepository.findByEmail(signInRequest.email) } returns userEntity
+            every { redisTemplate.opsForValue().set(any<String>(), any<String>(), any<java.time.Duration>()) } just Runs
             every { jwtUtil.generateAccessToken(userAccessTokenDto) } returns "accessToken"
-            every { userMapper.toSignInWithRefreshToken(userEntity, any(), any()) } returns signInWithRefreshToken
+            every {
+                userCommandMapper.toSignInWithRefreshToken(
+                    userEntity,
+                    any(),
+                    any()
+                )
+            } returns signInWithRefreshToken
 
             // When
-            val result = userService.signIn(signInRequest);
+            val result = userCommandService.signIn(signInRequest)
 
             "회원 존재" {
                 result shouldNotBe null
@@ -261,59 +268,70 @@ class UserCommandServiceTest: FreeSpec({
             "refreshToken 정상 발급" {
                 result.refreshToken shouldBe "refreshToken"
             }
-//            "valkey를 이용한 refresh token 저장" {
-//                verify(exactly = 1) { redisTemplate.opsForValue().set("refreshToken", userEntity.id.toStr(), Duration.ofDays(7))}
-//            }
+            //        "valkey를 이용한 refresh token 저장" {
+            //            verify(exactly = 1) { redisTemplate.opsForValue().set("refreshToken", userEntity.id.toStr(), Duration.ofDays(7))}
+            //        }
         }
 
-        "4XX] 로그인 실패" - {
-            "입력한 email 계정 없음" {
-                // Given
-                val signInRequest = SignInUserRequest("inValidUser1@test.com", "testUser123!@#")
+        "4XX] 입력한 email 계정 없음" - {
+            // Given
+            val signInRequest = SignInUserRequest("inValidUser1@test.com", "testUser123!@#")
 
-                every { userRepository.findByEmail(signInRequest.email) } returns null
+            every { userCommandRepository.findByEmail(signInRequest.email) } returns null
 
-                // When
-                val exception = shouldThrow<ResponseStatusException> {
-                    userService.signIn(signInRequest)
-                }
-
-                // Then
-                verify(exactly = 1) { userRepository.findByEmail(signInRequest.email) }
-
-                exception.statusCode shouldBeEqual HttpStatus.NOT_FOUND
-                exception.reason shouldBeEqual "존재하지 않는 계정입니다."
+            // When
+            val exception = shouldThrow<CustomException> {
+                userCommandService.signIn(signInRequest)
             }
-            "틀린 패스워드를 입력한 경우" {
-                // Given
-                val signInRequest = SignInUserRequest("testUser1@test.com", "invalidPassword123!@#")
-                val userEntity = UserEntity.builder()
-                    .id(1L)
-                    .email("testUser1@test.com")
-                    .password(encryptPassword)
-                    .nickName("tester")
-                    .userImg("/img/2025/05/05/202505.webp")
-                    .build()
 
-                every { userRepository.findByEmail(signInRequest.email) } returns userEntity
+            // Then
+            "Email 조회 로직 수행" {
+                verify(exactly = 1) { userCommandRepository.findByEmail(signInRequest.email) }
+            }
 
-                // When
-                val exception = shouldThrow<ResponseStatusException> {
-                    userService.signIn(signInRequest)
-                }
-                // Then
-                verify(exactly = 1) { userRepository.findByEmail(signInRequest.email) }
+            "계정 없음에 해당하는 ErrorCode 출력" {
+                val errorCode = exception.errorCode
+                errorCode.httpStatus() shouldBeEqual HttpStatus.NOT_FOUND
+                errorCode.code() shouldBeEqual "NOT_FOUND_USER"
+                errorCode.message() shouldBe "존재하지 않는 계정입니다."
+            }
+        }
 
-                exception.statusCode shouldBeEqual HttpStatus.UNAUTHORIZED
-                exception.reason shouldBeEqual "아이디 또는 비밀번호가 올바르지 않습니다."
+        "4XX] 틀린 패스워드를 입력" - {
+            // Given
+            val signInRequest = SignInUserRequest("testUser1@test.com", "invalidPassword123!@#")
+            val userEntity = UserEntity.builder()
+                .id(1L)
+                .email("testUser1@test.com")
+                .password(encryptPassword)
+                .nickName("tester")
+                .userImg("/img/2025/05/05/202505.webp")
+                .build()
+
+            every { userCommandRepository.findByEmail(signInRequest.email) } returns userEntity
+
+            // When
+            val exception = shouldThrow<CustomException> {
+                userCommandService.signIn(signInRequest)
+            }
+            // Then
+            "Email 조회 로직 실행" {
+                verify(exactly = 1) { userCommandRepository.findByEmail(signInRequest.email) }
+            }
+
+            "패스워드 유효성 실패 ErrorCode 출력" {
+                val errorCode = exception.errorCode
+                errorCode.httpStatus() shouldBeEqual HttpStatus.UNAUTHORIZED
+                errorCode.code() shouldBeEqual "UNAUTHORIZED_PASSWORD"
+                errorCode.message() shouldBe "아이디 또는 비밀번호가 올바르지 않습니다."
             }
         }
     }
 
-    "기능] 리프레시" - {
-        "2XX] 리프레시 성공" - {
+    "리프레시" - {
+        "2xx] 정상 갱신" - {
             // Given
-            val authHeader = "Bearer ThisIsValidAuthHeader"
+            val authHeader = "Bearer ExpiredAuthHeader"
             val refreshToken = "RefreshToken"
             val userAccessTokenDto = UserAccessTokenDto(1L, UserRole.USER_EMAIL)
             val userEntity = UserEntity.builder()
@@ -324,15 +342,16 @@ class UserCommandServiceTest: FreeSpec({
                 .userImg("/img/2025/05/05/202505.webp")
                 .build()
 
-            every { userMapper.toAccessTokenDto(any<Long>(), any<String>()) } returns userAccessTokenDto
+            every { userCommandMapper.toAccessTokenDto(any<Long>(), any<String>()) } returns userAccessTokenDto
+            every { jwtUtil.validateToken(any<String>()) } returns AccessTokenStatus.EXPIRED
             every { jwtUtil.generateAccessToken(userAccessTokenDto) } returns "RenewAccessToken"
             every { jwtUtil.getUserIdFromToken(any<String>()) } returns 1L
             every { jwtUtil.getUserRoleFromToken(any<String>()) } returns "USER_EMAIL"
             every { EncryptUtil.generateRefreshToken() } returns "RenewRefreshToken"
-            every { userRepository.findById(any<Long>()) } returns Optional.of(userEntity)
+            every { userCommandRepository.findById(any<Long>()) } returns Optional.of(userEntity)
 
             // When
-            val result = userService.refresh(authHeader, refreshToken)
+            val result = userCommandService.refresh(authHeader, refreshToken)
 
             // Then
             "유효한 Access Token 재발급" {
@@ -343,28 +362,79 @@ class UserCommandServiceTest: FreeSpec({
             }
         }
 
-        "4XX] AuthHeader가 Bearer로 시작하지 않는 경우" - {
+        "4XX] Bearer로 시작하지 않는 AuthHeader" - {
             // Given
+            val inValidAuthHeader = "UnValidAuthHeader"
+            val refreshToken = "RefreshToken"
 
             // When
+            val exception = shouldThrow<CustomException> {
+                userCommandService.refresh(inValidAuthHeader, refreshToken)
+            }
+
 
             // Then
+            "AuthHeader가 Bearer로 시작하는 로직 실행" {
+                verify(exactly = 1) { inValidAuthHeader.startsWith(AUTH_BEARER) }
+            }
+
+            "Bearer로 시작하지 않을 시 ErrorCode" {
+                val errorCode = exception.errorCode
+
+                errorCode.httpStatus() shouldBeEqual HttpStatus.UNAUTHORIZED
+                errorCode.code() shouldBeEqual "UNAUTHORIZED_LOGIN"
+                errorCode.message() shouldBeEqual "다시 로그인을 진행해주세요."
+            }
         }
 
-        "4XX] 변조된 Access Token인 경우" - {
+        "4XX] 변조된 Access Token" - {
             // Given
+            val authHeader = "Bearer ValidAuthHeader"
+            val refreshToken = "refreshToken"
+
+            every { jwtUtil.validateToken(any<String>()) } returns AccessTokenStatus.INVALID
 
             // When
+            val exception = shouldThrow<CustomException> {
+                userCommandService.refresh(authHeader, refreshToken)
+            }
 
             // Then
+            "유효성 확인 로직 실행" {
+                verify(exactly = 1) { jwtUtil.validateToken(any<String>()) }
+            }
+            "유효성 실패 ErrorCode" {
+                val errorCode = exception.errorCode
+
+                errorCode.httpStatus() shouldBeEqual HttpStatus.UNAUTHORIZED
+                errorCode.code() shouldBeEqual "UNAUTHORIZED_LOGIN"
+                errorCode.message() shouldBeEqual "다시 로그인을 진행해주세요."
+            }
         }
 
-        "4XX] refersh token이 만료된 경우" - {
+        "4XX] refresh token 만료" - {
             // Given
+            val authHeader = "Bearer ValidAuthHeader"
+            val refreshToken = "refreshToken"
 
-            // WHen
+            every { redisTemplate.opsForValue().get(refreshToken) } returns refreshToken
+
+            // When
+            val exception = shouldThrow<CustomException> {
+                userCommandService.refresh(authHeader, refreshToken)
+            }
 
             // Then
+            "refresh token 유효성 로직 실행" {
+                verify(exactly = 1) { redisTemplate.opsForValue().get(refreshToken) }
+            }
+            "만료된 RefreshToken인 경우 ErrorCode" {
+                val errorCode = exception.errorCode
+
+                errorCode.httpStatus() shouldBeEqual HttpStatus.UNAUTHORIZED
+                errorCode.code() shouldBeEqual "UNAUTHORIZED_LOGIN"
+                errorCode.message() shouldBeEqual "다시 로그인을 진행해주세요."
+            }
         }
     }
 
