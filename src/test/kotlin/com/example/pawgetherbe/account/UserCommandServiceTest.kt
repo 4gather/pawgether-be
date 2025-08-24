@@ -1,5 +1,6 @@
 package com.example.pawgetherbe.account
 import com.example.pawgetherbe.common.exceptionHandler.CustomException
+import com.example.pawgetherbe.common.filter.JwtAuthFilter.AUTH_BEARER
 import com.example.pawgetherbe.config.OauthConfig
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.*
@@ -384,10 +385,10 @@ class UserCommandServiceTest: FreeSpec({
 
         "4XX] 변조된 Access Token" - {
             // Given
-            val authHeader = "Bearer ValidAuthHeader"
+            val authHeader = "Bearer InValidAuthHeader"
             val refreshToken = "refreshToken"
 
-            every { jwtUtil.validateToken(any<String>()) } returns AccessTokenStatus.INVALID
+            every { jwtUtil.validateToken(authHeader.substring(AUTH_BEARER.length)) } returns AccessTokenStatus.INVALID
 
             // When
             val exception = shouldThrow<CustomException> {
@@ -395,7 +396,31 @@ class UserCommandServiceTest: FreeSpec({
             }
 
             // Then
-            verify(exactly = 1) { jwtUtil.validateToken(any<String>()) }
+            verify(exactly = 1) { jwtUtil.validateToken(authHeader.substring(AUTH_BEARER.length)) }
+
+            "유효성 실패 ErrorCode" {
+                val errorCode = exception.errorCode
+
+                errorCode.httpStatus() shouldBeEqual HttpStatus.UNAUTHORIZED
+                errorCode.code() shouldBeEqual "UNAUTHORIZED_LOGIN"
+                errorCode.message() shouldBeEqual "다시 로그인을 진행해주세요."
+            }
+        }
+
+        "4XX] 유효한 Access Token" - {
+            // Given
+            val authHeader = "Bearer ValidAuthHeader"
+            val refreshToken = "refreshToken"
+
+            every { jwtUtil.validateToken(authHeader.substring(AUTH_BEARER.length)) } returns AccessTokenStatus.VALID
+
+            // When
+            val exception = shouldThrow<CustomException> {
+                userCommandService.refresh(authHeader, refreshToken)
+            }
+
+            // Then
+            verify(exactly = 2) {  jwtUtil.validateToken(authHeader.substring(AUTH_BEARER.length)) }
 
             "유효성 실패 ErrorCode" {
                 val errorCode = exception.errorCode

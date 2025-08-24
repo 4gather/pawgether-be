@@ -159,7 +159,7 @@ class AccountCommandApiTest {
     }
 
     @Test
-    fun `(2xx) 로그인`() {
+    fun `(2xx) 정상 로그인`() {
         val normalRequest = UserCommandDto.SignInUserRequest("test@test.com", "test123!@#")
         val accessToken = "accessToken"
         val refreshToken = "refreshToken"
@@ -205,7 +205,7 @@ class AccountCommandApiTest {
     }
 
     @Test
-    fun `(4xx) 없는 계정으로 로그인`() {
+    fun `(4xx) 입력한 email 계정 없음`() {
         val noAccountRequest = SignInUserRequest("noAccount@test.com", "test123!@#")
 
         whenever(signInUseCase.signIn(any()))
@@ -288,10 +288,29 @@ class AccountCommandApiTest {
 //            jsonPath("$.error[0].defaultMessage") { value("비밀번호는 영문, 숫자, 특수문자를 포함해 8~20자로 입력해주세요")}
         }
     }
-    // TODO: 중복 로그인 처리?
 
     @Test
-    fun `(2xx) 만료된 토큰 갱신`() {
+    fun `(4xx) 틀린 패스워드 입력`() {
+        val wrongPasswordRequest = SignInUserRequest("test@test.com", "test123!")
+
+        whenever(signInUseCase.signIn(any()))
+            .thenThrow(
+                CustomException(NOT_FOUND_USER)
+            )
+
+        mockMvc.post("/api/v1/account") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(wrongPasswordRequest)
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.status") { value(HttpStatus.NOT_FOUND.value()) }
+            jsonPath("$.code") { value("NOT_FOUND_USER") }
+            jsonPath("$.message") { value("존재하지 않는 계정입니다.") }
+        }
+    }
+
+    @Test
+    fun `(2xx) 정상 갱신`() {
         val authHeader = "Bearer accessToken"
         val refreshToken = "refreshToken"
         val renewAccessToken = "renewAccessToken"
@@ -344,8 +363,45 @@ class AccountCommandApiTest {
     }
 
     @Test
+    fun `(4xx) 변조된 accessToken 입력`() {
+        val authHeader = "Bearer InvalidAccessToken"
+        val refreshToken = "refreshToken"
+
+        whenever(refreshUseCase.refresh(any(), any()))
+            .thenThrow(
+                CustomException(UNAUTHORIZED_LOGIN)
+            )
+
+        mockMvc.post("/api/v1/account/refresh") {
+            header("Authorization", authHeader)
+            cookie(Cookie("refreshToken", refreshToken))
+        }.andExpect {
+            status { isUnauthorized() }
+            jsonPath("$.status") { value(HttpStatus.UNAUTHORIZED.value()) }
+            jsonPath("$.code") { value("UNAUTHORIZED_LOGIN") }
+            jsonPath("$.message") { value("다시 로그인을 진행해주세요.") }
+        }
+    }
+
+    @Test
     fun `(4xx) 유효한 accessToken 입력`() {
-        // TODO: Service 로직에서 CustomException 처리 필요할 것 같음
+        val authHeader = "Bearer ValidAccessToken"
+        val refreshToken = "refreshToken"
+
+        whenever(refreshUseCase.refresh(any(), any()))
+            .thenThrow(
+                CustomException(UNAUTHORIZED_LOGIN)
+            )
+
+        mockMvc.post("/api/v1/account/refresh") {
+            header("Authorization", authHeader)
+            cookie(Cookie("refreshToken", refreshToken))
+        }.andExpect {
+            status { isUnauthorized() }
+            jsonPath("$.status") { value(HttpStatus.UNAUTHORIZED.value()) }
+            jsonPath("$.code") { value("UNAUTHORIZED_LOGIN") }
+            jsonPath("$.message") { value("다시 로그인을 진행해주세요.") }
+        }
     }
 
     @Test
