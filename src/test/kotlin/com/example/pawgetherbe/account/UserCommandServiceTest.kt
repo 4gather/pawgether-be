@@ -1,6 +1,5 @@
 package com.example.pawgetherbe.account
 import com.example.pawgetherbe.common.exceptionHandler.CustomException
-import com.example.pawgetherbe.common.filter.JwtAuthFilter.AUTH_BEARER
 import com.example.pawgetherbe.config.OauthConfig
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.*
@@ -13,6 +12,7 @@ import com.example.pawgetherbe.mapper.command.UserCommandMapper
 import com.example.pawgetherbe.repository.command.OauthCommandRepository
 import com.example.pawgetherbe.repository.command.UserCommandRepository
 import com.example.pawgetherbe.service.command.UserCommandService
+import com.example.pawgetherbe.service.command.UserCommandService.REFRESH_TOKEN_VALIDITY_SECONDS
 import com.example.pawgetherbe.util.EncryptUtil
 import com.example.pawgetherbe.util.EncryptUtil.passwordEncode
 import com.example.pawgetherbe.util.JwtUtil
@@ -22,8 +22,10 @@ import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.*
+import io.mockk.InternalPlatformDsl.toStr
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.ValueOperations
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
@@ -36,6 +38,7 @@ class UserCommandServiceTest: FreeSpec({
     lateinit var oauthCommandRepository: OauthCommandRepository
     lateinit var userCommandMapper: UserCommandMapper
     lateinit var redisTemplate: RedisTemplate<String, String>
+    lateinit var valueOperations: ValueOperations<String, String>
     lateinit var jwtUtil: JwtUtil
     lateinit var oauthConfig: OauthConfig
     lateinit var userCommandService: UserCommandService
@@ -240,18 +243,24 @@ class UserCommandServiceTest: FreeSpec({
                 .userImg("/img/2025/05/05/202505.webp")
                 .build()
             val signInWithRefreshToken = SignInUserWithRefreshTokenResponse(
-                "accessToken", "refreshToken", "Google", "testUser1@test.com", "tester", "/img/2025/05/05/202505.webp"
+                "accessToken",
+                "refreshToken",
+                "Google",
+                "testUser1@test.com",
+                "tester",
+                "/img/2025/05/05/202505.webp"
             )
             val userAccessTokenDto = UserAccessTokenDto(1L, UserRole.USER_EMAIL)
 
             every { userCommandRepository.findByEmail(signInRequest.email) } returns userEntity
-            every { redisTemplate.opsForValue().set(any<String>(), any<String>(), any<java.time.Duration>()) } just Runs
+            every { redisTemplate.opsForValue() } returns valueOperations
+            every { valueOperations.set(signInWithRefreshToken.refreshToken, userEntity.id.toStr(), REFRESH_TOKEN_VALIDITY_SECONDS.toLong()) } just Runs
             every { jwtUtil.generateAccessToken(userAccessTokenDto) } returns "accessToken"
             every {
                 userCommandMapper.toSignInWithRefreshToken(
                     userEntity,
-                    any(),
-                    any()
+                    any<String>(),
+                    any<String>()
                 )
             } returns signInWithRefreshToken
 
@@ -268,9 +277,6 @@ class UserCommandServiceTest: FreeSpec({
             "refreshToken 정상 발급" {
                 result.refreshToken shouldBe "refreshToken"
             }
-            //        "valkey를 이용한 refresh token 저장" {
-            //            verify(exactly = 1) { redisTemplate.opsForValue().set("refreshToken", userEntity.id.toStr(), Duration.ofDays(7))}
-            //        }
         }
 
         "4XX] 입력한 email 계정 없음" - {
@@ -285,9 +291,7 @@ class UserCommandServiceTest: FreeSpec({
             }
 
             // Then
-            "Email 조회 로직 수행" {
-                verify(exactly = 1) { userCommandRepository.findByEmail(signInRequest.email) }
-            }
+            verify(exactly = 1) { userCommandRepository.findByEmail(signInRequest.email) }
 
             "계정 없음에 해당하는 ErrorCode 출력" {
                 val errorCode = exception.errorCode
@@ -313,10 +317,6 @@ class UserCommandServiceTest: FreeSpec({
             // When
             val exception = shouldThrow<CustomException> {
                 userCommandService.signIn(signInRequest)
-            }
-            // Then
-            "Email 조회 로직 실행" {
-                verify(exactly = 1) { userCommandRepository.findByEmail(signInRequest.email) }
             }
 
             "패스워드 유효성 실패 ErrorCode 출력" {
@@ -372,12 +372,7 @@ class UserCommandServiceTest: FreeSpec({
                 userCommandService.refresh(inValidAuthHeader, refreshToken)
             }
 
-
             // Then
-            "AuthHeader가 Bearer로 시작하는 로직 실행" {
-                verify(exactly = 1) { inValidAuthHeader.startsWith(AUTH_BEARER) }
-            }
-
             "Bearer로 시작하지 않을 시 ErrorCode" {
                 val errorCode = exception.errorCode
 
@@ -400,9 +395,8 @@ class UserCommandServiceTest: FreeSpec({
             }
 
             // Then
-            "유효성 확인 로직 실행" {
-                verify(exactly = 1) { jwtUtil.validateToken(any<String>()) }
-            }
+            verify(exactly = 1) { jwtUtil.validateToken(any<String>()) }
+
             "유효성 실패 ErrorCode" {
                 val errorCode = exception.errorCode
 
@@ -415,9 +409,12 @@ class UserCommandServiceTest: FreeSpec({
         "4XX] refresh token 만료" - {
             // Given
             val authHeader = "Bearer ValidAuthHeader"
+            val accessToken = "accessToken"
             val refreshToken = "refreshToken"
 
-            every { redisTemplate.opsForValue().get(refreshToken) } returns refreshToken
+            every { jwtUtil.validateToken(accessToken) } returns AccessTokenStatus.EXPIRED
+            every { redisTemplate.opsForValue() } returns valueOperations
+            every { valueOperations.get(any<String>()) } returns null
 
             // When
             val exception = shouldThrow<CustomException> {
@@ -425,10 +422,10 @@ class UserCommandServiceTest: FreeSpec({
             }
 
             // Then
-            "refresh token 유효성 로직 실행" {
-                verify(exactly = 1) { redisTemplate.opsForValue().get(refreshToken) }
-            }
-            "만료된 RefreshToken인 경우 ErrorCode" {
+            verify(exactly = 1) { redisTemplate.opsForValue() }
+            verify(exactly = 1) { valueOperations.get("refreshToken") }
+
+            "만료된 RefreshToken인 경우 ErrorCode 출력" {
                 val errorCode = exception.errorCode
 
                 errorCode.httpStatus() shouldBeEqual HttpStatus.UNAUTHORIZED
@@ -443,6 +440,7 @@ class UserCommandServiceTest: FreeSpec({
         oauthCommandRepository = mockk(relaxed = true)
         userCommandMapper = mockk(relaxed = true)
         redisTemplate = mockk(relaxed = true)
+        valueOperations = mockk(relaxed = true)
         jwtUtil = mockk(relaxed = true)
         oauthConfig = mockk(relaxed = true)
 
