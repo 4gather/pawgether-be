@@ -136,7 +136,6 @@ public class AccountCommandApi {
     }
 
     @PostMapping("/refresh")
-    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<String> refresh(@RequestHeader(REQUEST_HEADER_AUTH) String authHeader,
                                           @CookieValue(name = "refreshToken") String refreshToken) {
 
@@ -144,7 +143,7 @@ public class AccountCommandApi {
 
         ResponseCookie refreshTokenCookieHeader = buildRefreshTokenCookieHeader(authTokens.get("refreshToken"));
 
-        return ResponseEntity.ok()
+        return ResponseEntity.status(HttpStatus.CREATED)
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookieHeader.toString())
                 .body(authTokens.get("accessToken"));
     }

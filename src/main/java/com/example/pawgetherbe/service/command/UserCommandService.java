@@ -282,7 +282,8 @@ public class UserCommandService implements SignUpCommandOauthUseCase, SignUpComm
 
         String accessToken = authHeader.substring(AUTH_BEARER.length());
 
-        if (jwtUtil.validateToken(accessToken).equals(AccessTokenStatus.INVALID)) {
+        if (jwtUtil.validateToken(accessToken).equals(AccessTokenStatus.INVALID) ||
+                jwtUtil.validateToken(accessToken).equals(AccessTokenStatus.VALID)) {
             throw new CustomException(UNAUTHORIZED_LOGIN);
         }
 
