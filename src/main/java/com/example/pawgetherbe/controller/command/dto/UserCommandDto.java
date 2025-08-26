@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public final class UserCommandDto {
 
@@ -22,10 +23,11 @@ public final class UserCommandDto {
             @Email(message = "이메일 형식을 지켜주세요")
             String email,
             @NotNull(message = "비밀번호를 입력해주세요")
-            @Pattern(
-                    regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+=-])[A-Za-z\\d!@#$%^&*()_+=-]{8,20}$",
-                    message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8~20자로 입력해주세요"
-            )
+//            @Pattern(
+//                    regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^*()_+=\\-._~])[A-Za-z\\d!@#$%^*()_+=\\-._~]{8,}$",
+//                    message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요"
+//            )
+            @Size(min = 8)
             String password
             ) {}
     public record UpdateUserRequest(
@@ -39,10 +41,11 @@ public final class UserCommandDto {
         @Email(message = "이메일 형식을 지켜주세요")
         String email,
         @NotBlank(message = "비밀번호를 입력해주세요")
-        @Pattern(
-                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+=-])[A-Za-z\\d!@#$%^&*()_+=-]{8,20}$",
-                message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8~20자로 입력해주세요"
-        )
+//        @Pattern(
+//                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^*()_+=\\-._~])[A-Za-z\\d!@#$%^*()_+=\\-._~]{8,}$",
+//                message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요"
+//        )
+        @Size(min = 8)
         String password
     ) {}
 
@@ -84,5 +87,20 @@ public final class UserCommandDto {
             String email,
             String nickName,
             String userImg
+    ) {}
+
+    public record PasswordEditRequest(
+            //        @Pattern(
+//                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^*()_+=\\-._~])[A-Za-z\\d!@#$%^*()_+=\\-._~]{8,}$",
+//                message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요"
+//        )
+            @Size(min = 8)
+            String password,
+            //        @Pattern(
+//                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^*()_+=\\-._~])[A-Za-z\\d!@#$%^*()_+=\\-._~]{8,}$",
+//                message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요"
+//        )
+            @Size(min = 8)
+            String newPassword
     ) {}
 }
