@@ -1,0 +1,124 @@
+package com.example.pawgetherbe.petfair
+
+import com.example.pawgetherbe.common.exceptionHandler.CustomException
+import com.example.pawgetherbe.common.exceptionHandler.GlobalExceptionHandler
+import com.example.pawgetherbe.controller.query.PetFairQueryApi
+import com.example.pawgetherbe.controller.query.dto.PetFairImageQueryDto.PetFairImageUrlResponse
+import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse
+import com.example.pawgetherbe.domain.status.PostStatus
+import com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_POST
+import com.example.pawgetherbe.usecase.post.ReadPostByIdUseCase
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.mockito.Mockito
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Import
+import org.springframework.http.MediaType
+import org.springframework.test.context.ContextConfiguration
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.get
+import java.time.Instant
+import java.time.LocalDate
+
+@WebMvcTest(controllers = [PetFairQueryApi::class])
+@ContextConfiguration(classes = [
+    PetFairQueryApi::class,
+    PetFairQueryApiTest.TestConfig::class
+])
+@Import(GlobalExceptionHandler::class)
+class PetFairQueryApiTest {
+
+    @Autowired lateinit var mockMvc: MockMvc
+    @Autowired lateinit var readPostByIdUSeCase: ReadPostByIdUseCase
+
+    @TestConfiguration
+    class TestConfig {
+        @Bean fun readPostByIdUseCase(): ReadPostByIdUseCase = mock()
+    }
+
+    @BeforeEach
+    fun setUp() {
+        Mockito.reset(readPostByIdUSeCase)
+    }
+
+    @Test
+    fun `(2xx) 단건 조회 성공`() {
+        // Given
+        val petFairId = 1L
+        val userId = 1L
+        val localDateNow = LocalDate.now()
+        val instantNow = Instant.now()
+        val imageDtoList = listOf(
+            PetFairImageUrlResponse("images/content/2025/05/0515-1.webp"),
+            PetFairImageUrlResponse("images/content/2025/05/0515-2.webp")
+        )
+
+        whenever(readPostByIdUSeCase.readDetailPetFair(petFairId)).thenReturn(
+            DetailPetFairResponse(
+                petFairId,
+                userId,
+                "2025 메가주 일산(상) 1",
+                "public/poster/2025/05/0515.webp",
+                localDateNow,
+                localDateNow,
+                "킨텍스 2전시장",
+                "경기도 고양시 일산서구 킨텍스로 271-59",
+                "https://k-pet.co.kr/information/scheduled-list/2025_megazoo_spring/",
+                "메가주 일산 설명",
+                1L,
+                "37.514575",
+                "127.063287",
+                "https://map.naver.com/p/entry/address/37.514575,127.063287,경기도 고양시 일산서구 킨텍스로 271-59?c=15.00,0,0,0,dh",
+                "02-6121-6247",
+                PostStatus.ACTIVE,
+                instantNow,
+                instantNow,
+                imageDtoList
+            )
+        )
+
+        // When & Then
+        mockMvc.get("/api/v1/petfairs/{petfairId}", petFairId) {
+            accept(MediaType.APPLICATION_JSON)
+        }.andExpect {
+            status { isOk() }
+            content {
+                contentType(MediaType.APPLICATION_JSON)
+                jsonPath("$.petFairId") { value(petFairId) }
+                jsonPath("$.userId") { value(userId) }
+                jsonPath("$.title") { value("2025 메가주 일산(상) 1") }
+                jsonPath("$.images[0].imageUrl") { value("images/content/2025/05/0515-1.webp")}
+            }
+        }
+    }
+
+    @Test
+    fun `(4xx) 존재하지 않는 게시글 조회`() {
+        val petFairId = 1L
+
+        whenever(readPostByIdUSeCase.readDetailPetFair(petFairId))
+            .thenThrow(
+                CustomException(NOT_FOUND_POST)
+            )
+
+        mockMvc.get("/api/v1/petfairs/{petfairId}", petFairId) {
+        }.andExpect {
+            status { isNotFound() }
+        }
+    }
+
+    @Test
+    fun `(4xx) 입력된 게시글 Id Type이 다름`() {
+        val petFairId = "id"
+
+        mockMvc.get("/api/v1/petfairs/{petfairId}", petFairId) {
+        }.andExpect {
+            status { isBadRequest() }
+        }
+    }
+}
