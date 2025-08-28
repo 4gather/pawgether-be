@@ -5,6 +5,8 @@ import org.springframework.http.HttpStatus;
 
 public enum PetFairQueryErrorCode implements ErrorCode {
     NOT_FOUND_PET_FAIR_POSTER(HttpStatus.NOT_FOUND, "NOT_FOUND_PET_FAIR_POSTER", "펫페어 포스터가 없습니다."),
+    NOT_FOUND_PET_FAIR_CALENDAR(HttpStatus.NOT_FOUND, "NOT_FOUND_PET_FAIR_CALENDAR", "펫페어 행사가 없습니다."),
+
     ;
 
     private final String message;
