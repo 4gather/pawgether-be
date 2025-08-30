@@ -3,9 +3,10 @@ package com.example.pawgetherbe.service.command;
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
 import com.example.pawgetherbe.common.oauth.OAuthProviderSpec;
 import com.example.pawgetherbe.config.OauthConfig;
-import com.example.pawgetherbe.controller.command.dto.UserCommandDto.SignInUserWithRefreshTokenResponse;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.Oauth2SignUpResponse;
+import com.example.pawgetherbe.controller.command.dto.UserCommandDto.PasswordEditRequest;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.SignInUserRequest;
+import com.example.pawgetherbe.controller.command.dto.UserCommandDto.SignInUserWithRefreshTokenResponse;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.UpdateUserRequest;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.UpdateUserResponse;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.UserAccessTokenDto;
@@ -50,9 +51,11 @@ import static com.example.pawgetherbe.domain.UserContext.getUserId;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.CONFLICT_USER;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.NOT_FOUND_USER;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.OAUTH_PROVIDER_NOT_SUPPORTED;
+import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.PASSWORD_MISMATCH;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.UNAUTHORIZED_LOGIN;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.UNAUTHORIZED_PASSWORD;
 import static com.example.pawgetherbe.util.EncryptUtil.generateRefreshToken;
+import static com.example.pawgetherbe.util.EncryptUtil.matches;
 import static com.example.pawgetherbe.util.EncryptUtil.passwordEncode;
 
 @Slf4j
@@ -70,6 +73,7 @@ public class UserCommandService implements SignUpCommandOauthUseCase, SignUpComm
     public static final int REFRESH_TOKEN_VALIDITY_SECONDS = 7 * 24 * 60 * 60; // 7일
 
     @Override
+    @Transactional
     public void deleteAccount(String refreshToken) {
         var id = Long.valueOf(getUserId());
         var oauthCheck = oauthCommandRepository.existsByUser_Id(id);
@@ -81,6 +85,7 @@ public class UserCommandService implements SignUpCommandOauthUseCase, SignUpComm
     }
 
     @Override
+    @Transactional
     public UpdateUserResponse updateUserInfo(UpdateUserRequest request) {
         var id = getUserId();
         var user = userCommandRepository.findById(Long.valueOf(id)).orElseThrow(() ->
@@ -93,6 +98,7 @@ public class UserCommandService implements SignUpCommandOauthUseCase, SignUpComm
     }
 
     @Override
+    @Transactional
     public SignInUserWithRefreshTokenResponse signIn(SignInUserRequest signInRequest) {
         UserEntity userEntity = userCommandRepository.findByEmail(signInRequest.email());
 
@@ -122,6 +128,7 @@ public class UserCommandService implements SignUpCommandOauthUseCase, SignUpComm
     }
 
     @Override
+    @Transactional
     public Oauth2SignUpResponse oauthSignUp(String provider, String code) {
         log.info("oauthSignUp start");
         Map<String, Object> userInfo = fetchOAuthUserInfo(provider, code);
@@ -189,6 +196,7 @@ public class UserCommandService implements SignUpCommandOauthUseCase, SignUpComm
     }
 
     @Override
+    @Transactional
     public void signUp(UserSignUpRequest request) {
         if(userCommandRepository.existsByEmail(request.email())){
             throw new CustomException(CONFLICT_USER);
@@ -202,6 +210,65 @@ public class UserCommandService implements SignUpCommandOauthUseCase, SignUpComm
                 .build();
 
         userCommandRepository.save(userEntityBuilder);
+    }
+
+    @Override
+    @Transactional
+    public void updatePassword(PasswordEditRequest passwordEditRequest) {
+        var id = Long.valueOf(getUserId());
+        var user = userCommandRepository.findById(id).orElseThrow(() -> new CustomException(NOT_FOUND_USER));
+
+        if(matches(passwordEditRequest.password(), user.getPassword())){
+            String newHash = passwordEncode(passwordEditRequest.newPassword());
+            user.updatePassword(newHash);
+        }else {
+            throw new CustomException(PASSWORD_MISMATCH);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, String> refresh(String authHeader, String refreshToken) {
+
+        if (!authHeader.startsWith(AUTH_BEARER)) {
+            throw new CustomException(UNAUTHORIZED_LOGIN);
+        }
+
+        String accessToken = authHeader.substring(AUTH_BEARER.length());
+
+        if (jwtUtil.validateToken(accessToken).equals(AccessTokenStatus.INVALID) ||
+                jwtUtil.validateToken(accessToken).equals(AccessTokenStatus.VALID)) {
+            throw new CustomException(UNAUTHORIZED_LOGIN);
+        }
+
+        // case1] refresh token 만료: 재로그인
+        if (!isValidRefreshToken(refreshToken)) {
+            throw new CustomException(UNAUTHORIZED_LOGIN);
+        }
+
+        Long userId = jwtUtil.getUserIdFromToken(accessToken);
+        String userRole = jwtUtil.getUserRoleFromToken(accessToken);
+
+        // case2] refresh token 만료 X: 갱신 로직
+        UserEntity user = userCommandRepository.findById(userId).orElseThrow(
+                () -> new CustomException(NOT_FOUND_USER)
+        );
+
+        String renewAccessToken = jwtUtil.generateAccessToken(userCommandMapper.toAccessTokenDto(userId, userRole));
+        String renewRefreshToken = EncryptUtil.generateRefreshToken();
+
+        return Map.of(
+                "accessToken", renewAccessToken,
+                "refreshToken", renewRefreshToken
+        );
+    }
+
+    private boolean isValidRefreshToken(String refreshToken) {
+        return redisTemplate.opsForValue().get(refreshToken) != null;
+    }
+
+    private boolean isMatchedPassword(String plainPassword, String encryptPassword) {
+        return matches(plainPassword, encryptPassword);
     }
 
     public Map<String, String> getToken(UserEntity userEntity) {
@@ -270,50 +337,5 @@ public class UserCommandService implements SignUpCommandOauthUseCase, SignUpComm
         }catch (Exception e) {
             throw new RuntimeException("OAuth 처리 중 오류 발생", e);
         }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Map<String, String> refresh(String authHeader, String refreshToken) {
-
-        if (!authHeader.startsWith(AUTH_BEARER)) {
-            throw new CustomException(UNAUTHORIZED_LOGIN);
-        }
-
-        String accessToken = authHeader.substring(AUTH_BEARER.length());
-
-        if (jwtUtil.validateToken(accessToken).equals(AccessTokenStatus.INVALID) ||
-                jwtUtil.validateToken(accessToken).equals(AccessTokenStatus.VALID)) {
-            throw new CustomException(UNAUTHORIZED_LOGIN);
-        }
-
-        // case1] refresh token 만료: 재로그인
-        if (!isValidRefreshToken(refreshToken)) {
-            throw new CustomException(UNAUTHORIZED_LOGIN);
-        }
-
-        Long userId = jwtUtil.getUserIdFromToken(accessToken);
-        String userRole = jwtUtil.getUserRoleFromToken(accessToken);
-
-        // case2] refresh token 만료 X: 갱신 로직
-        UserEntity user = userCommandRepository.findById(userId).orElseThrow(
-                () -> new CustomException(NOT_FOUND_USER)
-        );
-
-        String renewAccessToken = jwtUtil.generateAccessToken(userCommandMapper.toAccessTokenDto(userId, userRole));
-        String renewRefreshToken = EncryptUtil.generateRefreshToken();
-
-        return Map.of(
-                "accessToken", renewAccessToken,
-                "refreshToken", renewRefreshToken
-        );
-    }
-
-    private boolean isValidRefreshToken(String refreshToken) {
-        return redisTemplate.opsForValue().get(refreshToken) != null;
-    }
-
-    private boolean isMatchedPassword(String plainPassword, String encryptPassword) {
-        return EncryptUtil.matches(plainPassword, encryptPassword);
     }
 }

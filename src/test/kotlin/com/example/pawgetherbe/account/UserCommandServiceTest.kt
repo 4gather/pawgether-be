@@ -18,12 +18,14 @@ import com.example.pawgetherbe.util.EncryptUtil
 import com.example.pawgetherbe.util.EncryptUtil.passwordEncode
 import com.example.pawgetherbe.util.JwtUtil
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.*
 import io.mockk.InternalPlatformDsl.toStr
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ValueOperations
@@ -460,6 +462,50 @@ class UserCommandServiceTest: FreeSpec({
         }
     }
 
+    "비밀번호 수정" - {
+        // Given
+        val request = PasswordEditRequest("test1234*", "test12345*")
+        val oldHash = "\$2a\$10\$abcdefghijklmnopqrstuvxyz123456789012345678901234567"
+
+        val userEntity = UserEntity.builder()
+            .id(1L)
+            .password(oldHash)
+            .build()
+
+
+
+        "[2xx] 비밀번호 수정 성공" {
+            every { userCommandRepository.findById(any()) } returns Optional.of(userEntity)
+            every { EncryptUtil.matches(any(), any()) } returns true
+            every { EncryptUtil.passwordEncode(any()) } returns "NEW_HASH"
+
+            assertDoesNotThrow {
+                userCommandService.updatePassword(request)
+            }
+
+            verify(exactly = 1) { userCommandRepository.findById(any()) }
+            verify(exactly = 1) { EncryptUtil.matches("test1234*", oldHash) }
+            verify(exactly = 1) { EncryptUtil.passwordEncode("test12345*") }
+        }
+
+        "[4xx] 비밀번호 수정 실패" {
+            every { userCommandRepository.findById(any()) } returns Optional.of(userEntity)
+            every { EncryptUtil.matches(any(), any()) } returns false
+
+            val exception = shouldThrow<CustomException> {
+                userCommandService.updatePassword(request)
+            }
+
+            verify(exactly = 0) { EncryptUtil.passwordEncode(any()) }
+
+            val errorCode = exception.errorCode
+            errorCode.httpStatus() shouldBe HttpStatus.BAD_REQUEST
+            errorCode.code() shouldBe "PASSWORD_MISMATCH"
+            errorCode.message() shouldBe "비밀번호가 일치하지 않습니다."
+        }
+    }
+
+
     beforeTest {
         userCommandRepository = mockk(relaxed = true)
         oauthCommandRepository = mockk(relaxed = true)
@@ -477,5 +523,11 @@ class UserCommandServiceTest: FreeSpec({
             oauthConfig,
             userCommandMapper
         )
+
+        mockkStatic(EncryptUtil::class)
+    }
+
+    afterTest {
+        unmockkStatic(EncryptUtil::class)
     }
 })

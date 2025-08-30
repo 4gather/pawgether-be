@@ -23,8 +23,8 @@ public final class UserCommandDto {
             String email,
             @NotNull(message = "비밀번호를 입력해주세요")
             @Pattern(
-                    regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+=-])[A-Za-z\\d!@#$%^&*()_+=-]{8,20}$",
-                    message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8~20자로 입력해주세요"
+                    regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^*()_+=\\-._~])[A-Za-z\\d!@#$%^*()_+=\\-._~]{8,}$",
+                    message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요"
             )
             String password
             ) {}
@@ -38,10 +38,11 @@ public final class UserCommandDto {
         @NotBlank(message = "이메일을 입력해 주세요")
         @Email(message = "이메일 형식을 지켜주세요")
         String email,
+
         @NotBlank(message = "비밀번호를 입력해주세요")
         @Pattern(
-                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+=-])[A-Za-z\\d!@#$%^&*()_+=-]{8,20}$",
-                message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8~20자로 입력해주세요"
+                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^*()_+=\\-._~])[A-Za-z\\d!@#$%^*()_+=\\-._~]{8,}$",
+                message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요"
         )
         String password
     ) {}
@@ -84,5 +85,19 @@ public final class UserCommandDto {
             String email,
             String nickName,
             String userImg
+    ) {}
+
+    public record PasswordEditRequest(
+            @Pattern(
+                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^*()_+=\\-._~])[A-Za-z\\d!@#$%^*()_+=\\-._~]{8,}$",
+                message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요"
+            )
+            String password,
+
+            @Pattern(
+                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^*()_+=\\-._~])[A-Za-z\\d!@#$%^*()_+=\\-._~]{8,}$",
+                message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요"
+            )
+            String newPassword
     ) {}
 }
