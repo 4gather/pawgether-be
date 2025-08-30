@@ -9,8 +9,6 @@ import io.kotest.core.spec.style.FreeSpec
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
@@ -21,8 +19,6 @@ import java.time.LocalDate
 import com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_CALENDAR
 
 @ActiveProfiles("test")
-@WebMvcTest(PetFairCalendarQueryApi::class)
-@Import(GlobalExceptionHandler::class)
 class PetFairCalendarQueryApiTest: FreeSpec({
 
     lateinit var mockMvc: MockMvc

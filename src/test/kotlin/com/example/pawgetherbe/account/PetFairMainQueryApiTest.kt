@@ -9,19 +9,15 @@ import io.kotest.core.spec.style.FreeSpec
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_POSTER
-import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 
 @ActiveProfiles("test")
-@WebMvcTest(PetFairMainQueryApi::class)
-@Import(GlobalExceptionHandler::class)
 class PetFairMainQueryApiTest: FreeSpec({
 
     lateinit var mockMvc: MockMvc
