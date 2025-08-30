@@ -22,7 +22,7 @@ public class PetFairQueryDSLRepository {
 
     @Transactional(readOnly = true)
     public List<PetFairPosterDto> petFairCarousel() {
-        var today = java.time.LocalDate.now();
+        var today = LocalDate.now();
 
         return jpaQueryFactory
                 .select(petFair.id, petFair.posterImageUrl)
