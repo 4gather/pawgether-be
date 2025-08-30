@@ -90,17 +90,16 @@ public final class UserCommandDto {
     ) {}
 
     public record PasswordEditRequest(
-            //        @Pattern(
-//                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^*()_+=\\-._~])[A-Za-z\\d!@#$%^*()_+=\\-._~]{8,}$",
-//                message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요"
-//        )
-            @Size(min = 8)
+            @Pattern(
+                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^*()_+=\\-._~])[A-Za-z\\d!@#$%^*()_+=\\-._~]{8,}$",
+                message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요"
+            )
             String password,
-            //        @Pattern(
-//                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^*()_+=\\-._~])[A-Za-z\\d!@#$%^*()_+=\\-._~]{8,}$",
-//                message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요"
-//        )
-            @Size(min = 8)
+
+            @Pattern(
+                regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^*()_+=\\-._~])[A-Za-z\\d!@#$%^*()_+=\\-._~]{8,}$",
+                message = "비밀번호는 영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요"
+            )
             String newPassword
     ) {}
 }
