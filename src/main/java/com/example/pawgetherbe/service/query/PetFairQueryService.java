@@ -22,7 +22,7 @@ public class PetFairQueryService implements ReadPostsUseCase {
     @Override
     public PetFairCarouselResponse petFairCarousel() {
         var petFairCarousel = petFairQueryDSLRepository.petFairCarousel();
-        if (petFairCarousel == null) {
+        if (petFairCarousel == null || petFairCarousel.isEmpty()) {
             throw new CustomException(NOT_FOUND_PET_FAIR_POSTER);
         }
         return new PetFairCarouselResponse(petFairCarousel);
@@ -31,7 +31,7 @@ public class PetFairQueryService implements ReadPostsUseCase {
     @Override
     public PetFairCalendarResponse petFairCalendar(String date) {
         var petFairCalendar = petFairQueryDSLRepository.petFairCalendar(date);
-        if (petFairCalendar == null) {
+        if (petFairCalendar == null || petFairCalendar.isEmpty()) {
             throw new CustomException(NOT_FOUND_PET_FAIR_CALENDAR);
         }
         return new PetFairCalendarResponse(petFairCalendar);
