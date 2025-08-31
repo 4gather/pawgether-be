@@ -9,6 +9,8 @@ public enum UserCommandErrorCode implements ErrorCode {
 
     NOT_FOUND_USER(HttpStatus.NOT_FOUND,"NOT_FOUND_USER","존재하지 않는 계정입니다."),
 
+    PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "PASSWORD_MISMATCH", "비밀번호가 일치하지 않습니다."),
+
     OAUTH_PROVIDER_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "OAUTH_PROVIDER_NOT_SUPPORTED", "지원하지 않는 OAuth2 입니다."),
 
     CONFLICT_EMAIL(HttpStatus.CONFLICT, "CONFLICT_EMAIL", "이미 존재하는 Email 입니다."),
