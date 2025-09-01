@@ -9,6 +9,7 @@ import com.example.pawgetherbe.controller.command.dto.UserCommandDto.SignInUserR
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.SignInUserResponse
 import com.example.pawgetherbe.exception.command.UserCommandErrorCode.NOT_FOUND_USER
 import com.example.pawgetherbe.exception.command.UserCommandErrorCode.UNAUTHORIZED_LOGIN
+import com.example.pawgetherbe.exception.command.UserCommandErrorCode.PASSWORD_MISMATCH
 import com.example.pawgetherbe.mapper.command.UserCommandMapper
 import com.example.pawgetherbe.service.command.UserCommandService.REFRESH_TOKEN_VALIDITY_SECONDS
 import com.example.pawgetherbe.usecase.jwt.command.RefreshCommandUseCase
@@ -425,4 +426,35 @@ class AccountCommandApiTest {
         }
     }
 
+    @Test
+    fun `(2xx) 비밀번호 수정 성공`() {
+        val request = UserCommandDto.PasswordEditRequest("test1234*", "test12345*")
+
+        mockMvc.patch("/api/v1/account/password") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(request)
+        }.andExpect {
+            status { isOk() }
+        }
+    }
+
+    @Test
+    fun `(2xx) 비밀번호 수정 실패`() {
+        val request = UserCommandDto.PasswordEditRequest("test1234*", "test12345*")
+
+        whenever(editUserUseCase.updatePassword (any()))
+            .thenThrow(
+                CustomException(PASSWORD_MISMATCH)
+            )
+
+        mockMvc.patch("/api/v1/account/password") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(request)
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.status") { value(HttpStatus.BAD_REQUEST.value()) }
+            jsonPath("$.code") { value("PASSWORD_MISMATCH") }
+            jsonPath("$.message") { value("비밀번호가 일치하지 않습니다.") }
+        }
+    }
 }

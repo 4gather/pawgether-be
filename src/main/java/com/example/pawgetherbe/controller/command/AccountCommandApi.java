@@ -2,6 +2,7 @@ package com.example.pawgetherbe.controller.command;
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
 import com.example.pawgetherbe.config.OauthConfig;
+import com.example.pawgetherbe.controller.command.dto.UserCommandDto.PasswordEditRequest;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.OAuth2ResponseBody;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.SignInUserRequest;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.SignInUserResponse;
@@ -156,5 +157,10 @@ public class AccountCommandApi {
                 .maxAge(REFRESH_TOKEN_VALIDITY_SECONDS)
                 .sameSite(SAME_SITE_STRICT)
                 .build();
+    }
+
+    @PatchMapping("/password")
+    public void editPassword(@RequestBody @Valid PasswordEditRequest passwordEditRequest) {
+        editUserCommandUseCase.updatePassword(passwordEditRequest);
     }
 }

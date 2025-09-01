@@ -1,6 +1,6 @@
 package com.example.pawgetherbe.domain.entity;
 
-import com.example.pawgetherbe.domain.status.PostStatus;
+import com.example.pawgetherbe.domain.status.PetFairStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -82,13 +82,14 @@ public class PetFairEntity extends BaseEntity {
 
     @Column(name = "status", length = 255)
     @Enumerated(EnumType.STRING)
-    private PostStatus status;
+    private PetFairStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
     @OneToMany(mappedBy="petFair", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @Builder.Default
     private List<PetFairImageEntity> pairImages = new ArrayList<>();
 
     @OneToMany(mappedBy="petFair", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
@@ -96,4 +97,9 @@ public class PetFairEntity extends BaseEntity {
 
     @OneToMany(mappedBy="petFair", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<BookmarkEntity> bookmarkEntities = new ArrayList<>();
+
+    public void addImage(PetFairImageEntity image) {
+        pairImages.add(image);
+        image.setPetFair(this);
+    }
 }
