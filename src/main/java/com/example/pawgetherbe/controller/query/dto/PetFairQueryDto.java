@@ -1,6 +1,7 @@
 package com.example.pawgetherbe.controller.query.dto;
 
 import com.example.pawgetherbe.controller.query.dto.PetFairImageQueryDto.PetFairImageUrlResponse;
+import com.example.pawgetherbe.domain.status.PetFairFilterStatus;
 import com.example.pawgetherbe.domain.status.PetFairStatus;
 
 import java.time.Instant;
@@ -54,4 +55,8 @@ public final class PetFairQueryDto {
             List<PetFairImageUrlResponse> images
     ) {}
 
+    public record PetFairCountByStatusResponse(
+            PetFairFilterStatus status,
+            Long count
+    ) {}
 }

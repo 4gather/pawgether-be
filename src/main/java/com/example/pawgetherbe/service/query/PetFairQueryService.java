@@ -4,9 +4,12 @@ import com.example.pawgetherbe.common.exceptionHandler.CustomException;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCalendarResponse;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCarouselResponse;
+import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCountByStatusResponse;
 import com.example.pawgetherbe.domain.entity.PetFairEntity;
+import com.example.pawgetherbe.domain.status.PetFairFilterStatus;
 import com.example.pawgetherbe.mapper.query.PetFairQueryMapper;
 import com.example.pawgetherbe.repository.query.PetFairQueryDSLRepository;
+import com.example.pawgetherbe.usecase.post.CountPostsUseCase;
 import com.example.pawgetherbe.usecase.post.ReadPostByIdUseCase;
 import com.example.pawgetherbe.usecase.post.ReadPostsUseCase;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +24,7 @@ import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PetFairQueryService implements ReadPostsUseCase, ReadPostByIdUseCase {
+public class PetFairQueryService implements ReadPostsUseCase, ReadPostByIdUseCase, CountPostsUseCase {
 
     private final PetFairQueryDSLRepository petFairQueryDSLRepository;
 
@@ -54,5 +57,13 @@ public class PetFairQueryService implements ReadPostsUseCase, ReadPostByIdUseCas
                 .orElseThrow(() -> new CustomException(NOT_FOUND_PET_FAIR_POST));
 
         return petFairQueryMapper.toDetailPetFair(readDetailPetFairEntity);
+    }
+
+    @Override
+    public PetFairCountByStatusResponse countActiveByStatus(PetFairFilterStatus status) {
+
+        Long countActiveByFilteredStatus = petFairQueryDSLRepository.countActiveByStatus(status);
+
+        return new PetFairCountByStatusResponse(status, countActiveByFilteredStatus);
     }
 }

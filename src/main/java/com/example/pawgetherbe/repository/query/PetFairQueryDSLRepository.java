@@ -1,11 +1,14 @@
 package com.example.pawgetherbe.repository.query;
 
+import com.example.pawgetherbe.common.exceptionHandler.CustomException;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairPosterDto;
 import com.example.pawgetherbe.domain.entity.PetFairEntity;
 import com.example.pawgetherbe.domain.entity.QPetFairEntity;
+import com.example.pawgetherbe.domain.status.PetFairFilterStatus;
 import com.example.pawgetherbe.domain.status.PetFairStatus;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -14,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+
+import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.EMPTY_PET_FAIR_FILTER_STATUS;
+import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.INVALID_PET_FAIR_FILTER_STATUS;
 
 @Repository
 @RequiredArgsConstructor
@@ -77,7 +83,37 @@ public class PetFairQueryDSLRepository {
                         petFair.id.eq(petFairId),
                         petFair.status.eq(PetFairStatus.ACTIVE)
                 )
+                .from(petFair)
                 .fetchOne()
         );
+    }
+
+    // ACTIVE 게시글의 조건별 count 동적 쿼리
+    @Transactional(readOnly = true)
+    public Long countActiveByStatus(PetFairFilterStatus status) {
+
+        return jpaQueryFactory
+                .select(petFair.count())
+                .where(
+                        petFair.status.eq(PetFairStatus.ACTIVE),
+                        filterByStatus(status)
+                )
+                .from(petFair)
+                .fetchOne();
+    }
+
+    private BooleanExpression filterByStatus(PetFairFilterStatus status) {
+        LocalDate now = LocalDate.now();
+
+        if (status == null) {
+            throw new CustomException(EMPTY_PET_FAIR_FILTER_STATUS);
+        }
+
+        return switch(status) {
+            case PetFairFilterStatus.PET_FAIR_ALL -> null; // null은 무시되므로 where에서 ACTIVE 조건만 적용
+            case PetFairFilterStatus.PET_FAIR_ACTIVE -> petFair.endDate.goe(now); // 박람회 종료날짜 >= 오늘
+            case PetFairFilterStatus.PET_FAIR_FINISHED -> petFair.endDate.lt(now); // 박람회 종료 날짜 < 오늘
+            default -> throw new CustomException(INVALID_PET_FAIR_FILTER_STATUS);
+        };
     }
 }
