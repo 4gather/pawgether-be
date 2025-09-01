@@ -1,5 +1,9 @@
 package com.example.pawgetherbe.controller.query.dto;
 
+import com.example.pawgetherbe.controller.query.dto.PetFairImageQueryDto.PetFairImageUrlResponse;
+import com.example.pawgetherbe.domain.status.PetFairStatus;
+
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -13,11 +17,6 @@ public final class PetFairQueryDto {
             List<PetFairCalendarDto> petFairs
     ) {}
 
-    public record PetFairPosterDto(
-            Long petFairId,
-            String posterImageUrl
-    ) {}
-
     public record PetFairCalendarDto(
         Long petFairId,
         Long counter,
@@ -27,4 +26,32 @@ public final class PetFairQueryDto {
         LocalDate endDate,
         String simpleAddress
     ) {}
+
+    public record PetFairPosterDto(
+            Long petFairId,
+            String posterImageUrl
+    ) {}
+
+    public record DetailPetFairResponse(
+            Long petFairId,
+            Long userId,
+            String title,
+            String postImageUrl,
+            LocalDate startDate,
+            LocalDate endDate,
+            String simpleAddress,
+            String detailAddress,
+            String petFairUrl,
+            String content,
+            Long counter,
+            String latitude,
+            String longitude,
+            String mapUrl,
+            String telNumber,
+            PetFairStatus status,
+            Instant createdAt,
+            Instant updatedAt,
+            List<PetFairImageUrlResponse> images
+    ) {}
+
 }

@@ -5,8 +5,8 @@ import com.example.pawgetherbe.common.exceptionHandler.GlobalExceptionHandler
 import com.example.pawgetherbe.controller.query.PetFairQueryApi
 import com.example.pawgetherbe.controller.query.dto.PetFairImageQueryDto.PetFairImageUrlResponse
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse
-import com.example.pawgetherbe.domain.status.PostStatus
-import com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_POST
+import com.example.pawgetherbe.domain.status.PetFairStatus
+import com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_POST
 import com.example.pawgetherbe.usecase.post.ReadPostByIdUseCase
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -75,7 +75,7 @@ class PetFairQueryApiTest {
                 "127.063287",
                 "https://map.naver.com/p/entry/address/37.514575,127.063287,경기도 고양시 일산서구 킨텍스로 271-59?c=15.00,0,0,0,dh",
                 "02-6121-6247",
-                PostStatus.ACTIVE,
+                PetFairStatus.ACTIVE,
                 instantNow,
                 instantNow,
                 imageDtoList
@@ -103,7 +103,7 @@ class PetFairQueryApiTest {
 
         whenever(readPostByIdUSeCase.readDetailPetFair(petFairId))
             .thenThrow(
-                CustomException(NOT_FOUND_POST)
+                CustomException(NOT_FOUND_PET_FAIR_POST)
             )
 
         mockMvc.get("/api/v1/petfairs/{petfairId}", petFairId) {

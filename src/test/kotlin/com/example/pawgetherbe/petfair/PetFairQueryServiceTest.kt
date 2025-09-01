@@ -6,10 +6,10 @@ import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFai
 import com.example.pawgetherbe.domain.entity.PetFairEntity
 import com.example.pawgetherbe.domain.entity.PetFairImageEntity
 import com.example.pawgetherbe.domain.entity.UserEntity
-import com.example.pawgetherbe.domain.status.PostStatus
+import com.example.pawgetherbe.domain.status.PetFairStatus
 import com.example.pawgetherbe.domain.status.UserRole
 import com.example.pawgetherbe.mapper.query.PetFairQueryMapper
-import com.example.pawgetherbe.repository.query.PetFairQueryRepository
+import com.example.pawgetherbe.repository.query.PetFairQueryDSLRepository
 import com.example.pawgetherbe.service.query.PetFairQueryService
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
@@ -26,17 +26,17 @@ import java.util.*
 
 class PetFairQueryServiceTest: FreeSpec ({
     lateinit var service: PetFairQueryService
-    lateinit var repository: PetFairQueryRepository
+    lateinit var queryDSLRepository: PetFairQueryDSLRepository
     lateinit var mapper: PetFairQueryMapper
 
     lateinit var imageEntitiesList: List<PetFairImageEntity>
     lateinit var imageDtoList: List<PetFairImageUrlResponse>
 
     beforeTest {
-        repository = mockk<PetFairQueryRepository>(relaxed = true)
+        queryDSLRepository = mockk<PetFairQueryDSLRepository>(relaxed = true)
         mapper = mockk<PetFairQueryMapper>(relaxed = true)
 
-        service = PetFairQueryService(repository, mapper)
+        service = PetFairQueryService(queryDSLRepository, mapper)
     }
 
     "단건조회" - {
@@ -81,7 +81,7 @@ class PetFairQueryServiceTest: FreeSpec ({
                 .longitude("127.063287")
                 .mapUrl("https://map.naver.com/p/entry/address/37.514575,127.063287,경기도 고양시 일산서구 킨텍스로 271-59?c=15.00,0,0,0,dh")
                 .telNumber("02-6121-6247")
-                .status(PostStatus.ACTIVE)
+                .status(PetFairStatus.ACTIVE)
                 .pairImages(imageEntitiesList)
                 .build()
             val savedPetFairMappedDto = DetailPetFairResponse(
@@ -100,20 +100,20 @@ class PetFairQueryServiceTest: FreeSpec ({
                 "127.063287",
                 "https://map.naver.com/p/entry/address/37.514575,127.063287,경기도 고양시 일산서구 킨텍스로 271-59?c=15.00,0,0,0,dh",
                 "02-6121-6247",
-                PostStatus.ACTIVE,
+                PetFairStatus.ACTIVE,
                 instantNow,
                 instantNow,
                 imageDtoList
             )
 
-            every { repository.findByIdAndPostStatus(any<Long>(), PostStatus.ACTIVE) } returns Optional.of(savedPetFairEntity)
+            every { queryDSLRepository.findActiveById(any<Long>()) } returns Optional.of(savedPetFairEntity)
             every { mapper.toDetailPetFair(savedPetFairEntity)} returns savedPetFairMappedDto
 
             // When
             val result = service.readDetailPetFair(petFairId)
 
             // Then
-            verify(exactly = 1) { repository.findByIdAndPostStatus(petFairId, PostStatus.ACTIVE) }
+            verify(exactly = 1) { queryDSLRepository.findActiveById(petFairId) }
 
             "게시글 존재" {
                 result shouldNotBe null
@@ -133,9 +133,8 @@ class PetFairQueryServiceTest: FreeSpec ({
         "4xx] 등록된 게시글이 존재하지 않음" - {
             // Given
             val petFairId = 1L
-            val active = PostStatus.ACTIVE
 
-            every { repository.findByIdAndPostStatus(any<Long>(), active) } returns Optional.empty()
+            every { queryDSLRepository.findActiveById(any<Long>()) } returns Optional.empty()
 
             // When
             val exception = shouldThrow<CustomException> {
@@ -143,7 +142,7 @@ class PetFairQueryServiceTest: FreeSpec ({
             }
 
             // Then
-            verify(exactly = 1) { repository.findByIdAndPostStatus(petFairId, active) }
+            verify(exactly = 1) { queryDSLRepository.findActiveById(petFairId) }
 
             "게시글 없는 ErrorCode" {
                 val errorCode = exception.errorCode

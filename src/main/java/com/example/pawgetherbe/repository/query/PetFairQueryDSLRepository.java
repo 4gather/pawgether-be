@@ -2,6 +2,7 @@ package com.example.pawgetherbe.repository.query;
 
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairPosterDto;
+import com.example.pawgetherbe.domain.entity.PetFairEntity;
 import com.example.pawgetherbe.domain.entity.QPetFairEntity;
 import com.example.pawgetherbe.domain.status.PetFairStatus;
 import com.querydsl.core.types.Projections;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -64,5 +66,18 @@ public class PetFairQueryDSLRepository {
                 )
                 .orderBy(petFair.startDate.desc())
                 .fetch();
+    }
+
+    // Post Status 가 ACTIVE 인 것만 조회
+    @Transactional(readOnly = true)
+    public Optional<PetFairEntity> findActiveById(Long petFairId) {
+        return Optional.ofNullable(jpaQueryFactory
+                .selectFrom(petFair)
+                .where(
+                        petFair.id.eq(petFairId),
+                        petFair.status.eq(PetFairStatus.ACTIVE)
+                )
+                .fetchOne()
+        );
     }
 }

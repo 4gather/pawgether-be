@@ -3,6 +3,7 @@ package com.example.pawgetherbe.account
 import com.example.pawgetherbe.common.exceptionHandler.CustomException
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCarouselResponse
+import com.example.pawgetherbe.mapper.query.PetFairQueryMapper
 import com.example.pawgetherbe.repository.query.PetFairQueryDSLRepository
 import com.example.pawgetherbe.service.query.PetFairQueryService
 import io.kotest.assertions.throwables.shouldThrow
@@ -22,6 +23,7 @@ import java.time.LocalDate
 class PetFairQueryServiceTest: FreeSpec ({
     lateinit var petFairQueryService: PetFairQueryService
     lateinit var petFairQueryDSLRepository: PetFairQueryDSLRepository
+    lateinit var petFairQueryMapper: PetFairQueryMapper
 
     "Carousel 조회" - {
         "Carousel 조회 성공" {
@@ -109,7 +111,8 @@ class PetFairQueryServiceTest: FreeSpec ({
     beforeTest {
         petFairQueryService = mockk(relaxed = true)
         petFairQueryDSLRepository = mockk(relaxed = true)
+        petFairQueryMapper = mockk(relaxed = true)
 
-        petFairQueryService = PetFairQueryService(petFairQueryDSLRepository)
+        petFairQueryService = PetFairQueryService(petFairQueryDSLRepository, petFairQueryMapper)
     }
 })
