@@ -1,4 +1,4 @@
-package com.example.pawgetherbe.petfair
+package com.example.pawgetherbe.account
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException
 import com.example.pawgetherbe.common.exceptionHandler.GlobalExceptionHandler
@@ -7,6 +7,7 @@ import com.example.pawgetherbe.controller.query.dto.PetFairImageQueryDto.PetFair
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse
 import com.example.pawgetherbe.domain.status.PetFairStatus
 import com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_POST
+import com.example.pawgetherbe.usecase.post.CountPostsUseCase
 import com.example.pawgetherbe.usecase.post.ReadPostByIdUseCase
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -35,10 +36,12 @@ class PetFairQueryApiTest {
 
     @Autowired lateinit var mockMvc: MockMvc
     @Autowired lateinit var readPostByIdUSeCase: ReadPostByIdUseCase
+    @Autowired lateinit var countPostsUseCase: CountPostsUseCase
 
     @TestConfiguration
     class TestConfig {
         @Bean fun readPostByIdUseCase(): ReadPostByIdUseCase = mock()
+        @Bean fun countPostsUseCase(): CountPostsUseCase = mock()
     }
 
     @BeforeEach
