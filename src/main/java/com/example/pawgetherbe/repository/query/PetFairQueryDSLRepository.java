@@ -7,6 +7,7 @@ import com.example.pawgetherbe.domain.entity.PetFairEntity;
 import com.example.pawgetherbe.domain.entity.QPetFairEntity;
 import com.example.pawgetherbe.domain.status.PetFairFilterStatus;
 import com.example.pawgetherbe.domain.status.PetFairStatus;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -19,7 +20,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.EMPTY_PET_FAIR_FILTER_STATUS;
-import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.INVALID_PET_FAIR_FILTER_STATUS;
 
 @Repository
 @RequiredArgsConstructor
@@ -99,9 +99,11 @@ public class PetFairQueryDSLRepository {
                         filterByStatus(status)
                 )
                 .from(petFair)
+                .orderBy(getOrderBy(status))
                 .fetchOne();
     }
 
+    // PetFairFilterStatus 에 따른 Where 절
     private BooleanExpression filterByStatus(PetFairFilterStatus status) {
         LocalDate now = LocalDate.now();
 
@@ -113,7 +115,19 @@ public class PetFairQueryDSLRepository {
             case PetFairFilterStatus.PET_FAIR_ALL -> null; // null은 무시되므로 where에서 ACTIVE 조건만 적용
             case PetFairFilterStatus.PET_FAIR_ACTIVE -> petFair.endDate.goe(now); // 박람회 종료날짜 >= 오늘
             case PetFairFilterStatus.PET_FAIR_FINISHED -> petFair.endDate.lt(now); // 박람회 종료 날짜 < 오늘
-            default -> throw new CustomException(INVALID_PET_FAIR_FILTER_STATUS);
+        };
+    }
+
+    // PetFairFilterStatus 에 따른 OrderBy 조건문
+    private OrderSpecifier getOrderBy(PetFairFilterStatus status) {
+        if (status == null) {
+            throw new CustomException(EMPTY_PET_FAIR_FILTER_STATUS);
+        }
+
+        return switch (status) {
+            case PetFairFilterStatus.PET_FAIR_ALL -> petFair.startDate.desc();
+            case PetFairFilterStatus.PET_FAIR_ACTIVE -> petFair.startDate.asc();
+            case PetFairFilterStatus.PET_FAIR_FINISHED -> petFair.startDate.desc();
         };
     }
 }
