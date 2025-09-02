@@ -2,9 +2,11 @@ package com.example.pawgetherbe.controller.query;
 
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCountByStatusResponse;
+import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.SummaryPetFairWithCursorResponse;
 import com.example.pawgetherbe.domain.status.PetFairFilterStatus;
 import com.example.pawgetherbe.usecase.post.CountPostsUseCase;
 import com.example.pawgetherbe.usecase.post.ReadPostByIdUseCase;
+import com.example.pawgetherbe.usecase.post.ReadPostsUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +20,7 @@ public class PetFairQueryApi {
 
     private final ReadPostByIdUseCase readPostByIdUseCase;
     private final CountPostsUseCase countPostsUseCase;
+    private final ReadPostsUseCase readPostsUseCase;
 
     @GetMapping("/{petfairId}")
     public DetailPetFairResponse readDetailPetFair(@PathVariable("petfairId")Long petFairId) {
@@ -29,4 +32,8 @@ public class PetFairQueryApi {
         return countPostsUseCase.countActiveByStatus(filterStatus);
     }
 
+    @GetMapping
+    public SummaryPetFairWithCursorResponse findAllPetFairs() {
+        return readPostsUseCase.findAllPetFairs();
+    }
 }

@@ -59,4 +59,20 @@ public final class PetFairQueryDto {
             PetFairFilterStatus status,
             Long count
     ) {}
+
+    public record SummaryPetFairResponse(
+            Long petFairId,
+            Long counter,
+            String title,
+            String posterImageUrl,
+            LocalDate startDate,
+            LocalDate endDate,
+            String simpleAddress
+    ){}
+
+    public record SummaryPetFairWithCursorResponse(
+            List<SummaryPetFairResponse> petFairSummaries,
+            boolean hasMore,
+            String nextCursor
+    ) {}
 }

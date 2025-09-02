@@ -5,6 +5,8 @@ import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFai
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCalendarResponse;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCarouselResponse;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCountByStatusResponse;
+import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.SummaryPetFairResponse;
+import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.SummaryPetFairWithCursorResponse;
 import com.example.pawgetherbe.domain.entity.PetFairEntity;
 import com.example.pawgetherbe.domain.status.PetFairFilterStatus;
 import com.example.pawgetherbe.mapper.query.PetFairQueryMapper;
@@ -16,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_CALENDAR;
 import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_POST;
@@ -57,6 +61,26 @@ public class PetFairQueryService implements ReadPostsUseCase, ReadPostByIdUseCas
                 .orElseThrow(() -> new CustomException(NOT_FOUND_PET_FAIR_POST));
 
         return petFairQueryMapper.toDetailPetFair(readDetailPetFairEntity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SummaryPetFairWithCursorResponse findAllPetFairs() {
+        List<PetFairEntity> activeListOrderByDesc = petFairQueryDSLRepository.findActiveListOrderByDesc();
+
+        boolean hasMore = (activeListOrderByDesc.size() == 11); // hasMore 고려(최대 반환 개수 + 1)
+
+        if (!hasMore) {
+            // 반환할 10개의 게시글만 제공
+            activeListOrderByDesc.removeLast();
+        }
+
+        List<SummaryPetFairResponse> summaryPetFairResponseList = activeListOrderByDesc.stream()
+                .map(petFairQueryMapper::toSummaryPetFair)
+                .toList();
+        String nextCursor = String.valueOf(activeListOrderByDesc.getLast().getId());
+
+        return new SummaryPetFairWithCursorResponse(summaryPetFairResponseList, hasMore, nextCursor);
     }
 
     @Override

@@ -88,6 +88,19 @@ public class PetFairQueryDSLRepository {
         );
     }
 
+    // Post Status  == ACTIVE 조회/ Order By[startDate,id] == Desc 정렬
+    @Transactional(readOnly = true)
+    public List<PetFairEntity> findActiveListOrderByDesc() {
+        return jpaQueryFactory
+                .selectFrom(petFair)
+                .where(
+                        petFair.status.eq(PetFairStatus.ACTIVE)
+                )
+                .orderBy(petFair.startDate.desc(), petFair.id.desc())
+                .limit(11) // hasMore 계산을 위해 10+1개 가져옴
+                .fetch();
+    }
+
     // ACTIVE 게시글의 조건별 count 동적 쿼리
     @Transactional(readOnly = true)
     public Long countActiveByStatus(PetFairFilterStatus status) {
