@@ -9,6 +9,7 @@ import com.example.pawgetherbe.domain.status.PetFairStatus
 import com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_POST
 import com.example.pawgetherbe.usecase.post.CountPostsUseCase
 import com.example.pawgetherbe.usecase.post.ReadPostByIdUseCase
+import com.example.pawgetherbe.usecase.post.ReadPostsUseCase
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
@@ -37,11 +38,13 @@ class PetFairQueryApiTest {
     @Autowired lateinit var mockMvc: MockMvc
     @Autowired lateinit var readPostByIdUSeCase: ReadPostByIdUseCase
     @Autowired lateinit var countPostsUseCase: CountPostsUseCase
+    @Autowired lateinit var radPostsUseCase: ReadPostsUseCase
 
     @TestConfiguration
     class TestConfig {
         @Bean fun readPostByIdUseCase(): ReadPostByIdUseCase = mock()
         @Bean fun countPostsUseCase(): CountPostsUseCase = mock()
+        @Bean fun readPostsUseCase(): ReadPostsUseCase = mock()
     }
 
     @BeforeEach
