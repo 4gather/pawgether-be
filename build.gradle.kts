@@ -71,6 +71,13 @@ dependencies {
     annotationProcessor("jakarta.persistence:jakarta.persistence-api")
     annotationProcessor("jakarta.annotation:jakarta.annotation-api")
 
+    // webp 변환
+    implementation("com.sksamuel.scrimage:scrimage-core:4.3.4")
+    implementation("com.sksamuel.scrimage:scrimage-webp:4.3.4")
+
+    //사진 업로드
+    implementation("software.amazon.awssdk:s3:2.25.46")
+
     //test
     testImplementation("com.h2database:h2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

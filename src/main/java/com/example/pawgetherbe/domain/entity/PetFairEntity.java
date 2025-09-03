@@ -60,9 +60,9 @@ public class PetFairEntity extends BaseEntity {
     @Column(name = "pet_fair_url")
     private String petFairUrl;
 
-    @Lob
-    @Column(name = "map_url")
-    private String mapUrl;
+//    @Lob
+//    @Column(name = "map_url")
+//    private String mapUrl;
 
     @Lob
     @Column(name = "content")
@@ -71,11 +71,11 @@ public class PetFairEntity extends BaseEntity {
     @Column(name = "counter")
     private Long counter;
 
-    @Column(name = "latitude", length = 255)
-    private String latitude;
-
-    @Column(name = "longitude", length = 255)
-    private String longitude;
+//    @Column(name = "latitude", length = 255)
+//    private String latitude;
+//
+//    @Column(name = "longitude", length = 255)
+//    private String longitude;
 
     @Column(name = "tel_number", length = 255)
     private String telNumber;
@@ -97,6 +97,18 @@ public class PetFairEntity extends BaseEntity {
 
     @OneToMany(mappedBy="petFair", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<BookmarkEntity> bookmarkEntities = new ArrayList<>();
+
+    public void updateImage(String posterImageUrl, List<PetFairImageEntity> pairImages,
+                            PetFairStatus status, UserEntity user) {
+        this.posterImageUrl = posterImageUrl;
+        this.status = status;
+        this.user = user;
+
+        this.pairImages.clear();
+        for (PetFairImageEntity img : pairImages) {
+            this.addImage(img);
+        }
+    }
 
     public void addImage(PetFairImageEntity image) {
         pairImages.add(image);
