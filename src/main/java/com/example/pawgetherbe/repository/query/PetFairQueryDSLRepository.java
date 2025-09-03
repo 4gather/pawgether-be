@@ -2,6 +2,7 @@ package com.example.pawgetherbe.repository.query;
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto;
+import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.ConditionRequest;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairPosterDto;
 import com.example.pawgetherbe.domain.entity.PetFairEntity;
 import com.example.pawgetherbe.domain.entity.QPetFairEntity;
@@ -116,6 +117,21 @@ public class PetFairQueryDSLRepository {
                 .fetchOne();
     }
 
+    @Transactional(readOnly = true)
+    public List<PetFairEntity> findActiveByCondition(ConditionRequest condition) {
+
+        return jpaQueryFactory
+                .selectFrom(petFair)
+                .where(
+                        petFair.status.eq(PetFairStatus.ACTIVE),
+                        containKeyword(condition.keyword()),
+                        lessThanCursor(condition.cursor())
+                )
+                .orderBy(petFair.startDate.desc(), petFair.id.desc())
+                .limit(11)
+                .fetch();
+    }
+
     // PetFairFilterStatus 에 따른 Where 절
     private BooleanExpression filterByStatus(PetFairFilterStatus status) {
         LocalDate now = LocalDate.now();
@@ -132,7 +148,7 @@ public class PetFairQueryDSLRepository {
     }
 
     // PetFairFilterStatus 에 따른 OrderBy 조건문
-    private OrderSpecifier getOrderBy(PetFairFilterStatus status) {
+    private OrderSpecifier<?> getOrderBy(PetFairFilterStatus status) {
         if (status == null) {
             throw new CustomException(EMPTY_PET_FAIR_FILTER_STATUS);
         }
@@ -142,5 +158,15 @@ public class PetFairQueryDSLRepository {
             case PetFairFilterStatus.PET_FAIR_ACTIVE -> petFair.startDate.asc();
             case PetFairFilterStatus.PET_FAIR_FINISHED -> petFair.startDate.desc();
         };
+    }
+
+    private BooleanExpression containKeyword(String keyword) {
+
+        return (keyword == null) ? null : petFair.title.contains(keyword);
+    }
+
+    private BooleanExpression lessThanCursor(Long cursor) {
+
+        return (cursor == null) ? null : petFair.id.lt(cursor);
     }
 }

@@ -3,12 +3,19 @@ package com.example.pawgetherbe.controller.query.dto;
 import com.example.pawgetherbe.controller.query.dto.PetFairImageQueryDto.PetFairImageUrlResponse;
 import com.example.pawgetherbe.domain.status.PetFairFilterStatus;
 import com.example.pawgetherbe.domain.status.PetFairStatus;
+import jakarta.validation.constraints.NotBlank;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
 public final class PetFairQueryDto {
+
+    public record ConditionRequest(
+            @NotBlank(message = "검색어를 입력해주세요.")
+            String keyword,
+            Long cursor
+    ) {}
 
     public record PetFairCarouselResponse(
             List<PetFairPosterDto> petFairImages
@@ -72,7 +79,7 @@ public final class PetFairQueryDto {
 
     public record SummaryPetFairWithCursorResponse(
             List<SummaryPetFairResponse> petFairSummaries,
-            boolean hasMore,
-            String nextCursor
+            Boolean hasMore,
+            Long nextCursor
     ) {}
 }

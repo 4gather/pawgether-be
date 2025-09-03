@@ -1,6 +1,7 @@
 package com.example.pawgetherbe.service.query;
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
+import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.ConditionRequest;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCalendarResponse;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCarouselResponse;
@@ -78,7 +79,7 @@ public class PetFairQueryService implements ReadPostsUseCase, ReadPostByIdUseCas
         List<SummaryPetFairResponse> summaryPetFairResponseList = activeListOrderByDesc.stream()
                 .map(petFairQueryMapper::toSummaryPetFair)
                 .toList();
-        String nextCursor = String.valueOf(activeListOrderByDesc.getLast().getId());
+        Long nextCursor = activeListOrderByDesc.getLast().getId();
 
         return new SummaryPetFairWithCursorResponse(summaryPetFairResponseList, hasMore, nextCursor);
     }
@@ -89,5 +90,24 @@ public class PetFairQueryService implements ReadPostsUseCase, ReadPostByIdUseCas
         Long countActiveByFilteredStatus = petFairQueryDSLRepository.countActiveByStatus(status);
 
         return new PetFairCountByStatusResponse(status, countActiveByFilteredStatus);
+    }
+
+    @Override
+    public SummaryPetFairWithCursorResponse findPetFairsByCondition(ConditionRequest condition) {
+        List<PetFairEntity> activeListByCondition = petFairQueryDSLRepository.findActiveByCondition(condition);
+
+        boolean hasMore = (activeListByCondition.size() == 11); // hasMore 고려(최대 반환 개수 + 1)
+
+        if (!hasMore) {
+            // 반환할 10개의 게시글만 제공
+            activeListByCondition.removeLast();
+        }
+
+        List<SummaryPetFairResponse> summaryPetFairResponseList = activeListByCondition.stream()
+                .map(petFairQueryMapper::toSummaryPetFair)
+                .toList();
+        Long nextCursor = activeListByCondition.getLast().getId();
+
+        return new SummaryPetFairWithCursorResponse(summaryPetFairResponseList, hasMore, nextCursor);
     }
 }
