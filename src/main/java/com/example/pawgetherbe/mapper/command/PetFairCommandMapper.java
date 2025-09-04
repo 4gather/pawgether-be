@@ -13,6 +13,7 @@ import java.util.List;
 public interface PetFairCommandMapper {
     PetFairEntity toPetFairEntity(PetFairCreateRequest petFairCreateRequest);
 
+    @Mapping(target = "petFairId", source = "id")
     @Mapping(target = "images", source = "pairImages")
     PetFairCreateResponse toPetFairCreateResponse(PetFairEntity petFairEntity);
 

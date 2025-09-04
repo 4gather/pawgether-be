@@ -24,9 +24,11 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 
+import static com.example.pawgetherbe.domain.UserContext.getUserId;
+import static com.example.pawgetherbe.exception.command.PetFairCommandErrorCode.IMAGE_CONVERT_FAIL;
+import static com.example.pawgetherbe.exception.command.PetFairCommandErrorCode.PET_FAIR_CREATE_FAIL;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.NOT_FOUND_USER;
 
 @Slf4j
@@ -45,8 +47,7 @@ public class PetFairCommandService implements RegistryPostUseCase {
     @Override
     @Transactional
     public PetFairCreateResponse postCreate(PetFairCreateRequest req) {
-//        var id = Long.valueOf(getUserId());
-        var id = 1L;
+        var id = Long.valueOf(getUserId());
         var user = userCommandRepository.findById(id).orElseThrow(() -> new CustomException(NOT_FOUND_USER));
 
         try {
@@ -59,7 +60,7 @@ public class PetFairCommandService implements RegistryPostUseCase {
             String posterKey = String.format("poster/%d/%02d/%s.webp",
                     date.getYear(), date.getMonthValue(), baseName);
             byte[] posterBytes = toWebp(req.posterImage());
-//            uploadToR2(posterKey, posterBytes);
+            uploadToR2(posterKey, posterBytes);
 
             // 추가 이미지 업로드 (parallel 변환)
             List<byte[]> images = toWebpsParallel(req.images());
@@ -73,18 +74,17 @@ public class PetFairCommandService implements RegistryPostUseCase {
                         .build();
 
                 petFairImageEntities.add(builder);
-//                uploadToR2(key, images.get(i));
+                uploadToR2(key, images.get(i));
             }
 
             var PetFairEntity = petFairCommandMapper.toPetFairEntity(req);
-
             PetFairEntity.updateImage(posterKey, petFairImageEntities, PetFairStatus.ACTIVE, user);
 
             var petFair = petFairCommandRepository.save(PetFairEntity);
             return petFairCommandMapper.toPetFairCreateResponse(petFair);
 
         } catch (Exception e) {
-            throw new RuntimeException("펫페어 생성 실패", e);
+            throw new CustomException(PET_FAIR_CREATE_FAIL);
         }
     }
 
@@ -119,19 +119,18 @@ public class PetFairCommandService implements RegistryPostUseCase {
 
         // 작업당 가상 스레드를 생성하는 Executor. 각 파일 변환을 독립적으로 수행.
         try (var exec = Executors.newVirtualThreadPerTaskExecutor()) {
-
-            return files.stream()
+            var futures = files.stream()
                     .map(f -> CompletableFuture.supplyAsync(() -> {
-                                try {
-                                    return toWebp(f);
-                                } catch (Exception e) {
-                                    throw new CompletionException(e);
-                                }
-                            }, exec)
-                    )
-                    // 모든 Future를 순서대로 join하여 결과 수집(입력 순서 유지)
-                    .map(CompletableFuture::join)
+                        try {
+                            return toWebp(f);
+                        } catch (Exception e) {
+                            throw new CustomException(IMAGE_CONVERT_FAIL);
+                        }
+                    }, exec))
                     .toList();
+
+            // 입력 순서 그대로 결과 생성
+            return futures.stream().map(CompletableFuture::join).toList();
         }
     }
 }
