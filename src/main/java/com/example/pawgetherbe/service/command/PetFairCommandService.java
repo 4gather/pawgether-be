@@ -8,6 +8,7 @@ import com.example.pawgetherbe.domain.status.PetFairStatus;
 import com.example.pawgetherbe.mapper.command.PetFairCommandMapper;
 import com.example.pawgetherbe.repository.command.PetFairCommandRepository;
 import com.example.pawgetherbe.repository.command.UserCommandRepository;
+import com.example.pawgetherbe.usecase.post.DeletePostUseCase;
 import com.example.pawgetherbe.usecase.post.RegistryPostUseCase;
 import com.sksamuel.scrimage.ImmutableImage;
 import com.sksamuel.scrimage.webp.WebpWriter;
@@ -28,13 +29,15 @@ import java.util.concurrent.Executors;
 
 import static com.example.pawgetherbe.domain.UserContext.getUserId;
 import static com.example.pawgetherbe.exception.command.PetFairCommandErrorCode.IMAGE_CONVERT_FAIL;
+import static com.example.pawgetherbe.exception.command.PetFairCommandErrorCode.NOT_FOUND_PET_FAIR;
 import static com.example.pawgetherbe.exception.command.PetFairCommandErrorCode.PET_FAIR_CREATE_FAIL;
+import static com.example.pawgetherbe.exception.command.PetFairCommandErrorCode.REMOVED_PET_FAIR;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.NOT_FOUND_USER;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PetFairCommandService implements RegistryPostUseCase {
+public class PetFairCommandService implements RegistryPostUseCase, DeletePostUseCase {
 
     private final PetFairCommandRepository petFairCommandRepository;
     private final UserCommandRepository userCommandRepository;
@@ -86,6 +89,17 @@ public class PetFairCommandService implements RegistryPostUseCase {
         } catch (Exception e) {
             throw new CustomException(PET_FAIR_CREATE_FAIL);
         }
+    }
+
+    @Override
+    @Transactional
+    public void deletePost(long postId) {
+        var post = petFairCommandRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(NOT_FOUND_PET_FAIR));
+        if(post.getStatus() == PetFairStatus.REMOVED) {
+            throw new CustomException(REMOVED_PET_FAIR);
+        }
+        post.updateStatus(PetFairStatus.REMOVED);
     }
 
     private void uploadToR2(String key, byte[] data) {

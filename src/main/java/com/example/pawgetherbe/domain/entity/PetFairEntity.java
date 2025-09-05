@@ -114,4 +114,8 @@ public class PetFairEntity extends BaseEntity {
         pairImages.add(image);
         image.setPetFair(this);
     }
+
+    public void updateStatus(PetFairStatus status) {
+        this.status = status;
+    }
 }
