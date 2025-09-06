@@ -38,4 +38,8 @@ public class PetFairImageEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pet_fair_id", nullable = false)
     private PetFairEntity petFair;
+
+    void setPetFair(PetFairEntity petFair) {
+        this.petFair = petFair;
+    }
 }
