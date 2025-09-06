@@ -86,6 +86,8 @@ public class PetFairCommandService implements RegistryPostUseCase, DeletePostUse
             var petFair = petFairCommandRepository.save(PetFairEntity);
             return petFairCommandMapper.toPetFairCreateResponse(petFair);
 
+        } catch (CustomException ce) {
+            throw ce;
         } catch (Exception e) {
             throw new CustomException(PET_FAIR_CREATE_FAIL);
         }
@@ -114,33 +116,29 @@ public class PetFairCommandService implements RegistryPostUseCase, DeletePostUse
         log.info("업로드 완료: {}", key);
     }
 
-    private byte[] toWebp(MultipartFile file) throws Exception {
-        // 이미 webp면 그대로 통과
-        String name = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase();
-        String ct = file.getContentType() == null ? "" : file.getContentType().toLowerCase();
-        if (ct.equals("image/webp") || name.endsWith(".webp")) {
-            return file.getBytes();
+    private byte[] toWebp(MultipartFile file) {
+        try {
+            String name = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase();
+            String ct   = file.getContentType() == null ? "" : file.getContentType().toLowerCase();
+
+            if (ct.startsWith("image/webp") || name.endsWith(".webp")) {
+                return file.getBytes();
+            }
+
+            ImmutableImage img = ImmutableImage.loader().fromStream(file.getInputStream());
+            return img.bytes(WebpWriter.DEFAULT);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new CustomException(IMAGE_CONVERT_FAIL);
         }
-
-        ImmutableImage img = ImmutableImage.loader().fromStream(file.getInputStream());
-
-        return img.bytes(WebpWriter.DEFAULT);
     }
 
     private List<byte[]> toWebpsParallel(List<MultipartFile> files) {
-        // 빈 입력 방어: null 또는 빈 리스트면 즉시 빈 리스트 반환
         if (files == null || files.isEmpty()) return List.of();
 
-        // 작업당 가상 스레드를 생성하는 Executor. 각 파일 변환을 독립적으로 수행.
-        try (var exec = Executors.newVirtualThreadPerTaskExecutor()) {
+        try(var exec = Executors.newVirtualThreadPerTaskExecutor()) {
             var futures = files.stream()
-                    .map(f -> CompletableFuture.supplyAsync(() -> {
-                        try {
-                            return toWebp(f);
-                        } catch (Exception e) {
-                            throw new CustomException(IMAGE_CONVERT_FAIL);
-                        }
-                    }, exec))
+                    .map(f -> CompletableFuture.supplyAsync(() -> toWebp(f), exec))
                     .toList();
 
             // 입력 순서 그대로 결과 생성
