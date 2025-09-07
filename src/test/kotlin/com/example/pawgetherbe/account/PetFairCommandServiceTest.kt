@@ -20,6 +20,7 @@ import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.test.context.ActiveProfiles
@@ -184,5 +185,9 @@ class PetFairCommandServiceTest: FreeSpec({
             petFairCommandMapper,
             r2Client
         )
+    }
+
+    afterTest {
+        unmockkStatic(UserContext::class)
     }
 })

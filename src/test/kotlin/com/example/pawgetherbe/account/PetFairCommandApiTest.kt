@@ -16,6 +16,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.springframework.http.HttpStatus
 import org.springframework.mock.web.MockMultipartFile
@@ -46,6 +47,10 @@ class PetFairCommandApiTest: FreeSpec({
         mockMvc = MockMvcBuilders.standaloneSetup(petFairApi)
             .setControllerAdvice(GlobalExceptionHandler())
             .build()
+    }
+
+    afterTest {
+        unmockkStatic(UserContext::class)
     }
 
     "PetFairPostCreate" - {
