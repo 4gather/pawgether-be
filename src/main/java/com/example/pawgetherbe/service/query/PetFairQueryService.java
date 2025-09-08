@@ -69,9 +69,13 @@ public class PetFairQueryService implements ReadPostsUseCase, ReadPostByIdUseCas
     public SummaryPetFairWithCursorResponse findAllPetFairs() {
         List<PetFairEntity> activeListOrderByDesc = petFairQueryDSLRepository.findActiveListOrderByDesc();
 
+        if (activeListOrderByDesc.isEmpty()) {
+            throw new CustomException(NOT_FOUND_PET_FAIR_POST);
+        }
+
         boolean hasMore = (activeListOrderByDesc.size() == 11); // hasMore 고려(최대 반환 개수 + 1)
 
-        if (!hasMore) {
+        if (hasMore) {
             // 반환할 10개의 게시글만 제공
             activeListOrderByDesc.removeLast();
         }
@@ -96,9 +100,13 @@ public class PetFairQueryService implements ReadPostsUseCase, ReadPostByIdUseCas
     public SummaryPetFairWithCursorResponse findPetFairsByCondition(ConditionRequest condition) {
         List<PetFairEntity> activeListByCondition = petFairQueryDSLRepository.findActiveByCondition(condition);
 
+        if (activeListByCondition.isEmpty()) {
+            throw new CustomException(NOT_FOUND_PET_FAIR_POST);
+        }
+
         boolean hasMore = (activeListByCondition.size() == 11); // hasMore 고려(최대 반환 개수 + 1)
 
-        if (!hasMore) {
+        if (hasMore) {
             // 반환할 10개의 게시글만 제공
             activeListByCondition.removeLast();
         }
