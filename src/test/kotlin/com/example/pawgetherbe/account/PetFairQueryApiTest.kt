@@ -5,6 +5,8 @@ import com.example.pawgetherbe.common.exceptionHandler.GlobalExceptionHandler
 import com.example.pawgetherbe.controller.query.PetFairQueryApi
 import com.example.pawgetherbe.controller.query.dto.PetFairImageQueryDto.PetFairImageUrlResponse
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse
+import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCountByStatusResponse
+import com.example.pawgetherbe.domain.status.PetFairFilterStatus
 import com.example.pawgetherbe.domain.status.PetFairStatus
 import com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_POST
 import com.example.pawgetherbe.usecase.post.CountPostsUseCase
@@ -12,6 +14,9 @@ import com.example.pawgetherbe.usecase.post.ReadPostByIdUseCase
 import com.example.pawgetherbe.usecase.post.ReadPostsUseCase
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -20,10 +25,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
+import org.springframework.web.bind.MethodArgumentNotValidException
 import java.time.Instant
 import java.time.LocalDate
 
@@ -126,5 +133,61 @@ class PetFairQueryApiTest {
         }.andExpect {
             status { isBadRequest() }
         }
+    }
+
+    @ParameterizedTest(name = "{0} 상태 테스트")
+    @EnumSource(PetFairFilterStatus::class)
+    fun `(2xx) 게시글 상태에 따른 count 조회`(status: PetFairFilterStatus) {
+
+        val expectedCount = when (status) {
+            PetFairFilterStatus.PET_FAIR_ALL -> 1L
+            PetFairFilterStatus.PET_FAIR_ACTIVE -> 2L
+            PetFairFilterStatus.PET_FAIR_FINISHED -> 3L
+        }
+
+        whenever(countPostsUseCase.countActiveByStatus(status))
+            .thenReturn(PetFairCountByStatusResponse(status, expectedCount))
+
+        mockMvc.get("/api/v1/petfairs/count/{filterStatus}", status)
+            .andExpect {
+                status { isOk() }
+                content {
+                    contentType(MediaType.APPLICATION_JSON)
+                    jsonPath("$.status") { value(status.name) }
+                    jsonPath("$.count") { value(expectedCount) }
+                }
+            }
+    }
+
+    // TODO: Expected: 400, Actual: 404 ??? -> @PathVariable 은 null 을 받지 않고 바로 Exception
+//    @Test
+//    fun `(4xx) filter 상태 미입력`() {
+//        val invalidFilterStatus = null;
+//
+//        mockMvc.get("/api/v1/petfairs/count/{filterStatus}", invalidFilterStatus)
+//            .andExpect {
+//                status { isBadRequest() }
+//                content {
+//                    contentType(MediaType.APPLICATION_JSON)
+//                    jsonPath("$.status") { value(HttpStatus.BAD_REQUEST)}
+//                    jsonPath("$.code") { value("VALIDATION_FAILED")}
+//                }
+//            }
+//    }
+
+    @Test
+    fun `(2xx) 목록 조회`() {
+
+        mockMvc.get("/api/v1/petfairs")
+            .andExpect {  {
+                status { isOk() }
+
+            } }
+
+    }
+
+    @Test
+    fun `(2xx) 검색 조회`() {
+
     }
 }

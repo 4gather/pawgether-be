@@ -96,6 +96,8 @@ public class PetFairQueryDSLRepository {
                 .selectFrom(petFair)
                 .where(
                         petFair.status.eq(PetFairStatus.ACTIVE)
+                        // nextCursor 값이 없으면 내림차순 기본 조회, 값이 존재하면 그 다음 값부터 조회
+                        // TODO: orderBy 보다 먼저 실행되므로 id로 하면 error가 발생할 듯.
                 )
                 .orderBy(petFair.startDate.desc(), petFair.id.desc())
                 .limit(11) // hasMore 계산을 위해 10+1개 가져옴
@@ -166,7 +168,7 @@ public class PetFairQueryDSLRepository {
     }
 
     private BooleanExpression lessThanCursor(Long cursor) {
-
+        cursor = (cursor == 0) ? null : cursor;
         return (cursor == null) ? null : petFair.id.lt(cursor);
     }
 }

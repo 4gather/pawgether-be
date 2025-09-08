@@ -3,11 +3,11 @@ package com.example.pawgetherbe.account
 import com.example.pawgetherbe.common.exceptionHandler.CustomException
 import com.example.pawgetherbe.controller.query.dto.PetFairImageQueryDto.PetFairImageUrlResponse
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCarouselResponse
+import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.*
 import com.example.pawgetherbe.domain.entity.PetFairEntity
 import com.example.pawgetherbe.domain.entity.PetFairImageEntity
 import com.example.pawgetherbe.domain.entity.UserEntity
+import com.example.pawgetherbe.domain.status.PetFairFilterStatus
 import com.example.pawgetherbe.domain.status.PetFairStatus
 import com.example.pawgetherbe.domain.status.UserRole
 import com.example.pawgetherbe.mapper.query.PetFairQueryMapper
@@ -15,6 +15,7 @@ import com.example.pawgetherbe.repository.query.PetFairQueryDSLRepository
 import com.example.pawgetherbe.service.query.PetFairQueryService
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -231,6 +232,217 @@ class PetFairQueryServiceTest: FreeSpec ({
                 errorCode.httpStatus() shouldBeEqual HttpStatus.NOT_FOUND
                 errorCode.code() shouldBeEqual  "NOT_FOUND_PET_FAIR_POST"
                 errorCode.message() shouldBeEqual "게시글이 존재하지 않습니다."
+            }
+        }
+    }
+
+    "상태별 게시글 Count" - {
+        "2xx] 정상 Count" - {
+            // Given
+            var countByAll = PetFairCountByStatusResponse(PetFairFilterStatus.PET_FAIR_ALL, 1L)
+            var countByActive = PetFairCountByStatusResponse(PetFairFilterStatus.PET_FAIR_ACTIVE, 2L)
+            var countByFinished = PetFairCountByStatusResponse(PetFairFilterStatus.PET_FAIR_FINISHED, 3L)
+
+            every { petFairQueryDSLRepository.countActiveByStatus(PetFairFilterStatus.PET_FAIR_ALL) } returns 1L
+            every { petFairQueryDSLRepository.countActiveByStatus(PetFairFilterStatus.PET_FAIR_ACTIVE) } returns 2L
+            every { petFairQueryDSLRepository.countActiveByStatus(PetFairFilterStatus.PET_FAIR_FINISHED) } returns 3L
+
+            // When
+            val statusAllResult = petFairQueryService.countActiveByStatus(PetFairFilterStatus.PET_FAIR_ALL)
+            verify(exactly = 1) { petFairQueryDSLRepository.countActiveByStatus(PetFairFilterStatus.PET_FAIR_ALL) }
+
+            val statusActiveResult  = petFairQueryService.countActiveByStatus(PetFairFilterStatus.PET_FAIR_ACTIVE)
+            verify(exactly = 1) { petFairQueryDSLRepository.countActiveByStatus(PetFairFilterStatus.PET_FAIR_ACTIVE) }
+
+            val statusFinishedResult  = petFairQueryService.countActiveByStatus(PetFairFilterStatus.PET_FAIR_FINISHED)
+            verify(exactly = 1) { petFairQueryDSLRepository.countActiveByStatus(PetFairFilterStatus.PET_FAIR_FINISHED) }
+
+            "PET_FAIR_ALL 상태 count" {
+                // Then
+                statusAllResult.status shouldBeEqual PetFairFilterStatus.PET_FAIR_ALL
+                statusAllResult.count shouldBeEqual 1L
+            }
+            "PET_FAIR_ACTIVE 상태 count" {
+                statusActiveResult.status shouldBeEqual PetFairFilterStatus.PET_FAIR_ACTIVE
+                statusActiveResult.count shouldBeEqual 2L
+            }
+            "PET_FAIR_FINISHED 상태 count" {
+                statusFinishedResult.status shouldBeEqual PetFairFilterStatus.PET_FAIR_FINISHED
+                statusFinishedResult.count shouldBeEqual 3L
+            }
+        }
+    }
+
+    "목록 조회" - {
+        "2xx] 11개 이상 목록 반환" - {
+            // Given
+            val petFairEntityList = mutableListOf<PetFairEntity>()
+            // hasMore 연산을 위해 11개 조회
+            for (i in 11 downTo 1 ) {
+                val entity = PetFairEntity.builder()
+                    .id(i.toLong())
+                    .title("Test Title"+i)
+                    .content("Test Content"+i)
+                    .startDate(LocalDate.of(2025, 1, i))
+                    .status(PetFairStatus.ACTIVE)
+                    .build()
+                petFairEntityList.add(entity)
+            }
+
+            // 11개 조회한 것 중 가장 마지막 게시글(startDate -> id 가장 작은 게시글) remove
+            val summaryPetFairDtoList = mutableListOf<SummaryPetFairResponse>()
+            for (i in 11 downTo 2) {
+                val dto = SummaryPetFairResponse(
+                    i.toLong(),
+                    1L,
+                    "Test Title" + i,
+                    "",
+                    LocalDate.of(2025, 1, i),
+                    LocalDate.of(2025, 1, i + 2),
+                    "simpleAddress"
+                )
+                summaryPetFairDtoList.add(dto)
+            }
+
+            val summaryPetFairWithCursorDtoList = SummaryPetFairWithCursorResponse(
+                summaryPetFairDtoList,true,2L
+            )
+            for (i in 10 downTo 1) {
+                every { petFairQueryMapper.toSummaryPetFair(petFairEntityList.get(i-1)) } returns summaryPetFairDtoList.get(i-1)
+            }
+            every { petFairQueryDSLRepository.findActiveListOrderByDesc() } returns petFairEntityList
+
+            // When
+            val result = petFairQueryService.findAllPetFairs()
+
+            // Then
+            verify(exactly = 1) { petFairQueryDSLRepository.findActiveListOrderByDesc() }
+
+            "response - 내림차순" {
+                for (i in 0 until result.petFairSummaries.lastIndex) {
+                    result.petFairSummaries.get(i).startDate shouldBeGreaterThan result.petFairSummaries.get(i+1).startDate
+                }
+            }
+            "nextCursor 확인" {
+                val listSize = summaryPetFairWithCursorDtoList.petFairSummaries.size
+                result.nextCursor shouldBeEqual summaryPetFairWithCursorDtoList.nextCursor
+            }
+            "hasMore 확인" {
+                result.hasMore shouldBeEqual true
+            }
+        }
+
+        "2xx] 10개 이하 목록 반환" - {
+            // Given
+            val petFairEntityList = mutableListOf<PetFairEntity>()
+            for (i in 5 downTo 1 ) {
+                val entity = PetFairEntity.builder()
+                    .id(i.toLong())
+                    .title("Test Title"+i)
+                    .content("Test Content"+i)
+                    .startDate(LocalDate.of(2025, 1, i))
+                    .status(PetFairStatus.ACTIVE)
+                    .build()
+                petFairEntityList.add(entity)
+            }
+
+            val summaryPetFairDtoList = mutableListOf<SummaryPetFairResponse>()
+            for (i in 5 downTo 1) {
+                val dto = SummaryPetFairResponse(
+                    i.toLong(),
+                    1L,
+                    "Test Title" + i,
+                    "",
+                    LocalDate.of(2025, 1, i),
+                    LocalDate.of(2025, 1, i + 2),
+                    "simpleAddress"
+                )
+                summaryPetFairDtoList.add(dto)
+            }
+
+            val summaryPetFairWithCursorDtoList = SummaryPetFairWithCursorResponse(
+                summaryPetFairDtoList,false,1L
+            )
+            for (i in 5 downTo 1) {
+                every { petFairQueryMapper.toSummaryPetFair(petFairEntityList.get(i-1)) } returns summaryPetFairDtoList.get(i-1)
+            }
+            every { petFairQueryDSLRepository.findActiveListOrderByDesc() } returns petFairEntityList
+
+            // When
+            val result = petFairQueryService.findAllPetFairs()
+
+            // Then
+            verify(exactly = 1) { petFairQueryDSLRepository.findActiveListOrderByDesc() }
+
+            "response - 내림차순" {
+                for (i in 0 until result.petFairSummaries.lastIndex) {
+                    result.petFairSummaries.get(i).startDate shouldBeGreaterThan result.petFairSummaries.get(i+1).startDate
+                }
+            }
+            "nextCursor 확인" {
+                val listSize = summaryPetFairWithCursorDtoList.petFairSummaries.size
+                result.nextCursor shouldBeEqual summaryPetFairWithCursorDtoList.nextCursor
+            }
+            "hasMore 확인" {
+                result.hasMore shouldBeEqual false
+            }
+        }
+    }
+
+    "검색 조회" - {
+        "2xx] condition 조건으로 검색 조회" - {
+            // Given
+            val condition = ConditionRequest("Test", 6L)
+            val petFairEntityList = mutableListOf<PetFairEntity>()
+
+            // cursor(6L) 보다 작은 id 값 조회(where 절)
+            for (i in 5 downTo 1 ) {
+                val entity = PetFairEntity.builder()
+                    .id(i.toLong())
+                    .title("Test Title"+i)
+                    .content("Test Content"+i)
+                    .startDate(LocalDate.of(2025, 1, i))
+                    .status(PetFairStatus.ACTIVE)
+                    .build()
+                petFairEntityList.add(entity)
+            }
+
+            val summaryPetFairDtoList = mutableListOf<SummaryPetFairResponse>()
+            for (i in 5 downTo 1) {
+                val dto = SummaryPetFairResponse(
+                    i.toLong(),
+                    1L,
+                    "Test Title" + i,
+                    "",
+                    LocalDate.of(2025, 1, i),
+                    LocalDate.of(2025, 1, i + 2),
+                    "simpleAddress"
+                )
+                summaryPetFairDtoList.add(dto)
+            }
+
+            val summaryPetFairWithCursorDtoList = SummaryPetFairWithCursorResponse(
+                summaryPetFairDtoList,false,1L
+            )
+            for (i in 5 downTo 1) {
+                every { petFairQueryMapper.toSummaryPetFair(petFairEntityList.get(i-1)) } returns summaryPetFairDtoList.get(i-1)
+            }
+            every { petFairQueryDSLRepository.findActiveByCondition(condition) } returns petFairEntityList
+
+            // When
+            val result = petFairQueryService.findPetFairsByCondition(condition)
+
+            // Then
+            verify(exactly = 1) { petFairQueryDSLRepository.findActiveByCondition(condition) }
+
+            "keyword를 포함한 title 조회" {
+                result.petFairSummaries.all { it.title.contains(condition.keyword) } shouldBe true
+            }
+            "cursor 확인" {
+                result.nextCursor shouldBeEqual summaryPetFairWithCursorDtoList.nextCursor
+            }
+            "hasMore 확인" {
+                result.hasMore shouldBeEqual summaryPetFairWithCursorDtoList.hasMore
             }
         }
     }
