@@ -38,7 +38,6 @@ public class PetFairImageEntity extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pet_fair_id", nullable = false)
-    @Setter
     private PetFairEntity petFair;
 
     void setPetFair(PetFairEntity petFair) {
