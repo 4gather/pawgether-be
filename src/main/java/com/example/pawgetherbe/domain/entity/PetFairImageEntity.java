@@ -40,4 +40,8 @@ public class PetFairImageEntity extends BaseEntity {
     @JoinColumn(name = "pet_fair_id", nullable = false)
     @Setter
     private PetFairEntity petFair;
+
+    void setPetFair(PetFairEntity petFair) {
+        this.petFair = petFair;
+    }
 }

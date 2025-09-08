@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,5 +45,15 @@ public final class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.badRequest().body(responseBody);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponseDto> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        var body = ErrorResponseDto.builder()
+                .status(HttpStatus.PAYLOAD_TOO_LARGE.value())
+                .code("FILE_TOO_LARGE")
+                .message("업로드 가능한 파일 용량을 초과했습니다.")
+                .build();
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(body);
     }
 }
