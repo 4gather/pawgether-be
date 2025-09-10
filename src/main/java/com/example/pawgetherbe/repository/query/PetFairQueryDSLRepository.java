@@ -168,7 +168,9 @@ public class PetFairQueryDSLRepository {
     }
 
     private BooleanExpression lessThanCursor(Long cursor) {
-        cursor = (cursor == 0) ? null : cursor;
-        return (cursor == null) ? null : petFair.id.lt(cursor);
+        if (cursor == null || cursor == 0) {
+            return null;
+        }
+        return petFair.id.lt(cursor);
     }
 }
