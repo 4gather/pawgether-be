@@ -50,7 +50,9 @@ public class PetFairCommandService implements RegistryPostUseCase, DeletePostUse
     @Override
     @Transactional
     public PetFairCreateResponse postCreate(PetFairCreateRequest req) {
-        var id = Long.valueOf(getUserId());
+//        var id = Long.valueOf(getUserId());
+        // TODO: Commit 할 때 수정하기
+        var id = 1L;
         var user = userCommandRepository.findById(id).orElseThrow(() -> new CustomException(NOT_FOUND_USER));
 
         try {
@@ -63,7 +65,7 @@ public class PetFairCommandService implements RegistryPostUseCase, DeletePostUse
             String posterKey = String.format("poster/%d/%02d/%s.webp",
                     date.getYear(), date.getMonthValue(), baseName);
             byte[] posterBytes = toWebp(req.posterImage());
-            uploadToR2(posterKey, posterBytes);
+//            uploadToR2(posterKey, posterBytes);
 
             // 추가 이미지 업로드 (parallel 변환)
             List<byte[]> images = toWebpsParallel(req.images());
@@ -77,7 +79,7 @@ public class PetFairCommandService implements RegistryPostUseCase, DeletePostUse
                         .build();
 
                 petFairImageEntities.add(builder);
-                uploadToR2(key, images.get(i));
+//                uploadToR2(key, images.get(i));
             }
 
             var PetFairEntity = petFairCommandMapper.toPetFairEntity(req);
@@ -104,17 +106,17 @@ public class PetFairCommandService implements RegistryPostUseCase, DeletePostUse
         post.updateStatus(PetFairStatus.REMOVED);
     }
 
-    private void uploadToR2(String key, byte[] data) {
-        r2Client.putObject(
-                PutObjectRequest.builder()
-                        .bucket(bucketName)
-                        .key(key)
-                        .contentType("image/webp")
-                        .build(),
-                RequestBody.fromBytes(data)
-        );
-        log.info("업로드 완료: {}", key);
-    }
+//    private void uploadToR2(String key, byte[] data) {
+//        r2Client.putObject(
+//                PutObjectRequest.builder()
+//                        .bucket(bucketName)
+//                        .key(key)
+//                        .contentType("image/webp")
+//                        .build(),
+//                RequestBody.fromBytes(data)
+//        );
+//        log.info("업로드 완료: {}", key);
+//    }
 
     private byte[] toWebp(MultipartFile file) {
         try {

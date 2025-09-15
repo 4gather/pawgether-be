@@ -1,6 +1,5 @@
 package com.example.pawgetherbe.controller.query.dto;
 
-import com.example.pawgetherbe.controller.query.dto.PetFairImageQueryDto.PetFairImageUrlResponse;
 import com.example.pawgetherbe.domain.status.PetFairFilterStatus;
 import com.example.pawgetherbe.domain.status.PetFairStatus;
 import jakarta.validation.constraints.NotBlank;
@@ -44,7 +43,7 @@ public final class PetFairQueryDto {
             Long petFairId,
             Long userId,
             String title,
-            String postImageUrl,
+            String posterImageUrl,
             LocalDate startDate,
             LocalDate endDate,
             String simpleAddress,
@@ -59,7 +58,7 @@ public final class PetFairQueryDto {
             PetFairStatus status,
             Instant createdAt,
             Instant updatedAt,
-            List<PetFairImageUrlResponse> images
+            List<String> images
     ) {}
 
     public record PetFairCountByStatusResponse(

@@ -3,7 +3,6 @@ package com.example.pawgetherbe.account
 import com.example.pawgetherbe.common.exceptionHandler.CustomException
 import com.example.pawgetherbe.common.exceptionHandler.GlobalExceptionHandler
 import com.example.pawgetherbe.controller.query.PetFairQueryApi
-import com.example.pawgetherbe.controller.query.dto.PetFairImageQueryDto.PetFairImageUrlResponse
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCountByStatusResponse
 import com.example.pawgetherbe.domain.status.PetFairFilterStatus
@@ -16,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
-import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -25,12 +23,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
-import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
-import org.springframework.web.bind.MethodArgumentNotValidException
 import java.time.Instant
 import java.time.LocalDate
 
@@ -67,8 +63,10 @@ class PetFairQueryApiTest {
         val localDateNow = LocalDate.now()
         val instantNow = Instant.now()
         val imageDtoList = listOf(
-            PetFairImageUrlResponse("images/content/2025/05/0515-1.webp"),
-            PetFairImageUrlResponse("images/content/2025/05/0515-2.webp")
+            "images/content/2025/05/0515-1.webp",
+            "images/content/2025/05/0515-2.webp"
+//            PetFairImageUrlResponse("images/content/2025/05/0515-1.webp"),
+//            PetFairImageUrlResponse("images/content/2025/05/0515-2.webp")
         )
 
         whenever(readPostByIdUSeCase.readDetailPetFair(petFairId)).thenReturn(

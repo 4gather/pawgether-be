@@ -1,7 +1,6 @@
 package com.example.pawgetherbe.account
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException
-import com.example.pawgetherbe.controller.query.dto.PetFairImageQueryDto.PetFairImageUrlResponse
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.*
 import com.example.pawgetherbe.domain.entity.PetFairEntity
@@ -38,7 +37,8 @@ class PetFairQueryServiceTest: FreeSpec ({
     lateinit var petFairQueryMapper: PetFairQueryMapper
 
     lateinit var imageEntitieList: List<PetFairImageEntity>
-    lateinit var imageDtoList: List<PetFairImageUrlResponse>
+    lateinit var imageDtoList: List<String>
+//    lateinit var imageDtoList: List<PetFairImageUrlResponse>
 
     "Carousel 조회" - {
         "Carousel 조회 성공" {
@@ -139,8 +139,10 @@ class PetFairQueryServiceTest: FreeSpec ({
                     .build()
             )
             imageDtoList = listOf(
-                PetFairImageUrlResponse("images/content/2025/05/0515-1.webp"),
-                PetFairImageUrlResponse("images/content/2025/05/0515-2.webp")
+                "images/content/2025/05/0515-1.webp",
+                "images/content/2025/05/0515-2.webp"
+//                PetFairImageUrlResponse("images/content/2025/05/0515-1.webp"),
+//                PetFairImageUrlResponse("images/content/2025/05/0515-2.webp")
             )
             val testUser = UserEntity.builder()
                 .id(1L)
@@ -208,7 +210,7 @@ class PetFairQueryServiceTest: FreeSpec ({
                 result.title shouldBe "2025 메가주 일산(상) 1"
             }
             "pairImage URL 존재" {
-                result.images.get(0).imageUrl shouldBe "images/content/2025/05/0515-1.webp"
+                result.images.get(0) shouldBe "images/content/2025/05/0515-1.webp"
             }
         }
 
