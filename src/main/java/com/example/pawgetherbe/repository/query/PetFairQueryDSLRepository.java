@@ -182,8 +182,9 @@ public class PetFairQueryDSLRepository {
     }
 
     private BooleanExpression lessThanCursor(Long cursor) {
-        // TODO: 여기에서도 cursor보다 작으면 안되고 nextCursor의 startDate 조건도 들어가야함.
-        // 실행해보니 startDate 와 상관없이 nextCursor 보다 작으면 출력
-        return (cursor == null || cursor == 0) ? null : petFair.id.lt(cursor);
+        if (cursor == null || cursor == 0) {
+            return null;
+        }
+        return petFair.id.lt(cursor);
     }
 }

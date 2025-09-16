@@ -1,4 +1,5 @@
 package com.example.pawgetherbe.account
+import com.example.pawgetherbe.repository.query.UserQueryDSLRepository
 import com.example.pawgetherbe.repository.query.UserQueryRepository
 import com.example.pawgetherbe.service.query.UserQueryService
 import io.kotest.assertions.throwables.shouldThrow
@@ -14,6 +15,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 @ExtendWith(SpringExtension::class)
 class UserQueryServiceTest: FreeSpec({
     lateinit var userQueryRepository: UserQueryRepository
+    lateinit var userQueryDSLRepository: UserQueryDSLRepository
     lateinit var userQueryService: UserQueryService
 
     "이메일 중복 검사" - {
@@ -42,7 +44,7 @@ class UserQueryServiceTest: FreeSpec({
         "닉네임이 중복되지 않을때" {
             val nickName = "tester"
 
-            every { userQueryRepository.existsByNickName(nickName) } returns false
+            every { userQueryDSLRepository.existsByNickNameToLowerCase(nickName) } returns false
 
             userQueryService.signupNicknameCheck(nickName)
         }
@@ -50,7 +52,7 @@ class UserQueryServiceTest: FreeSpec({
         "중복 닉네임이면 예외 발생" {
             val nickName = "tester"
 
-            every { userQueryRepository.existsByNickName(nickName) } returns true
+            every { userQueryDSLRepository.existsByNickNameToLowerCase(nickName) } returns true
 
             val exception = shouldThrow<RuntimeException> {
                 userQueryService.signupNicknameCheck(nickName)
@@ -64,9 +66,11 @@ class UserQueryServiceTest: FreeSpec({
 
     beforeTest {
         userQueryRepository = mockk(relaxed = true)
+        userQueryDSLRepository = mockk(relaxed = true)
 
         userQueryService = UserQueryService(
-            userQueryRepository
+            userQueryRepository,
+            userQueryDSLRepository
         )
     }
 })
