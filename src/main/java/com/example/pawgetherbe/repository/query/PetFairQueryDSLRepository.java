@@ -89,7 +89,7 @@ public class PetFairQueryDSLRepository {
         );
     }
 
-    // Post Status  == ACTIVE 조회/ Order By[startDate,id] == Desc 정렬
+    // Post Status == ACTIVE 조회/ Order By[startDate,id] == Desc 정렬
     @Transactional(readOnly = true)
     public List<PetFairEntity> findActiveListOrderByDesc() {
         return jpaQueryFactory
@@ -115,9 +115,23 @@ public class PetFairQueryDSLRepository {
                         filterByStatus(status)
                 )
                 .from(petFair)
-                .orderBy(getOrderBy(status))
                 .fetchOne();
     }
+
+    // TODO: 미완성
+//    ACTIVE 게시글의 조건별 조회
+//    @Transactional(readOnly = true)
+//    public List<PetFairEntity> findActiveListByFilterStatus(PetFairFilterStatus status) {
+//
+//        return jpaQueryFactory
+//                .selectFrom(petFair)
+//                .where(
+//                        petFair.status.eq(PetFairStatus.ACTIVE),
+//                        filterByStatus(status)
+//                )
+//                .orderBy(getOrderBy(status))
+//                .fetch();
+//    }
 
     @Transactional(readOnly = true)
     public List<PetFairEntity> findActiveByCondition(ConditionRequest condition) {
@@ -168,7 +182,8 @@ public class PetFairQueryDSLRepository {
     }
 
     private BooleanExpression lessThanCursor(Long cursor) {
-        cursor = (cursor == 0) ? null : cursor;
-        return (cursor == null) ? null : petFair.id.lt(cursor);
+        // TODO: 여기에서도 cursor보다 작으면 안되고 nextCursor의 startDate 조건도 들어가야함.
+        // 실행해보니 startDate 와 상관없이 nextCursor 보다 작으면 출력
+        return (cursor == null || cursor == 0) ? null : petFair.id.lt(cursor);
     }
 }
