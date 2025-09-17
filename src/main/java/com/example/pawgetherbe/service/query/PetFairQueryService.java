@@ -81,11 +81,34 @@ public class PetFairQueryService implements ReadPostsUseCase, ReadPostByIdUseCas
     }
 
     @Override
-    public PetFairCountByStatusResponse countActiveByStatus(PetFairFilterStatus status) {
+    public PetFairCountByStatusResponse countActiveByFilterStatus(PetFairFilterStatus status) {
 
-        Long countActiveByFilteredStatus = petFairQueryDSLRepository.countActiveByStatus(status);
+        Long countActiveByFilteredStatus = petFairQueryDSLRepository.countActiveByFilterStatus(status);
 
         return new PetFairCountByStatusResponse(status, countActiveByFilteredStatus);
+    }
+
+    @Override
+    public SummaryPetFairWithCursorResponse findPetFairsByFilterStatus(PetFairFilterStatus status, Cursor cursor) {
+
+        List<PetFairEntity> listByStatus = petFairQueryDSLRepository.findActiveListByFilterStatus(status, cursor);
+
+        if (listByStatus.isEmpty()) {
+            throw new CustomException(NOT_FOUND_PET_FAIR_POST);
+        }
+
+        boolean hasMore = (listByStatus.size() == 11);
+
+        if (hasMore) {
+            listByStatus.removeLast();
+        }
+
+        List<SummaryPetFairResponse> summaryPetFairResponseByStatus = listByStatus.stream()
+                .map(petFairQueryMapper::toSummaryPetFair)
+                .toList();
+        Long nextCursor = listByStatus.getLast().getId();
+
+        return new SummaryPetFairWithCursorResponse(summaryPetFairResponseByStatus, hasMore, nextCursor);
     }
 
     @Override

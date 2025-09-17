@@ -106,7 +106,7 @@ public class PetFairQueryDSLRepository {
 
     // ACTIVE 게시글의 조건별 count 동적 쿼리
     @Transactional(readOnly = true)
-    public Long countActiveByStatus(PetFairFilterStatus status) {
+    public Long countActiveByFilterStatus(PetFairFilterStatus status) {
 
         return jpaQueryFactory
                 .select(petFair.count())
@@ -118,20 +118,20 @@ public class PetFairQueryDSLRepository {
                 .fetchOne();
     }
 
-    // TODO: 미완성
-//    ACTIVE 게시글의 조건별 조회
-//    @Transactional(readOnly = true)
-//    public List<PetFairEntity> findActiveListByFilterStatus(PetFairFilterStatus status) {
-//
-//        return jpaQueryFactory
-//                .selectFrom(petFair)
-//                .where(
-//                        petFair.status.eq(PetFairStatus.ACTIVE),
-//                        filterByStatus(status)
-//                )
-//                .orderBy(getOrderBy(status))
-//                .fetch();
-//    }
+    // ACTIVE 게시글의 조건별 동적 조회
+    @Transactional(readOnly = true)
+    public List<PetFairEntity> findActiveListByFilterStatus(PetFairFilterStatus status, Cursor cursor) {
+
+        return jpaQueryFactory
+                .selectFrom(petFair)
+                .where(
+                        petFair.status.eq(PetFairStatus.ACTIVE),
+                        filterByStatus(status),
+                        lessThanCursor(cursor)
+                )
+                .orderBy(getOrderByStartDate(status), getOrderById(status))
+                .fetch();
+    }
 
     @Transactional(readOnly = true)
     public List<PetFairEntity> findActiveByCondition(ConditionRequest condition) {
@@ -164,7 +164,7 @@ public class PetFairQueryDSLRepository {
     }
 
     // PetFairFilterStatus 에 따른 OrderBy 조건문
-    private OrderSpecifier<?> getOrderBy(PetFairFilterStatus status) {
+    private OrderSpecifier<?> getOrderByStartDate(PetFairFilterStatus status) {
         if (status == null) {
             throw new CustomException(EMPTY_PET_FAIR_FILTER_STATUS);
         }
@@ -175,6 +175,19 @@ public class PetFairQueryDSLRepository {
             case PetFairFilterStatus.PET_FAIR_FINISHED -> petFair.startDate.desc();
         };
     }
+
+    private OrderSpecifier<?> getOrderById(PetFairFilterStatus status) {
+        if (status == null) {
+            throw new CustomException(EMPTY_PET_FAIR_FILTER_STATUS);
+        }
+
+        return switch (status) {
+            case PetFairFilterStatus.PET_FAIR_ALL -> petFair.id.desc();
+            case PetFairFilterStatus.PET_FAIR_ACTIVE -> petFair.id.asc();
+            case PetFairFilterStatus.PET_FAIR_FINISHED -> petFair.id.desc();
+        };
+    }
+
 
     private BooleanExpression containKeyword(String keyword) {
 

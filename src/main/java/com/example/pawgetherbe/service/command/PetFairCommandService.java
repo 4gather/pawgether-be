@@ -50,9 +50,8 @@ public class PetFairCommandService implements RegistryPostUseCase, DeletePostUse
     @Override
     @Transactional
     public PetFairCreateResponse postCreate(PetFairCreateRequest req) {
-//        var id = Long.valueOf(getUserId());
-        // TODO: Commit 할 때 수정하기
-        var id = 1L;
+        var id = Long.valueOf(getUserId());
+
         var user = userCommandRepository.findById(id).orElseThrow(() -> new CustomException(NOT_FOUND_USER));
 
         try {

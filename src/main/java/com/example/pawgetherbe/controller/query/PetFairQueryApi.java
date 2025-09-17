@@ -23,9 +23,15 @@ public class PetFairQueryApi {
         return readPostByIdUseCase.readDetailPetFair(petFairId);
     }
 
-    @GetMapping("/count/{filterStatus}")
-    public PetFairCountByStatusResponse countPetFairByStatus(@PathVariable("filterStatus") PetFairFilterStatus filterStatus) {
-        return countPostsUseCase.countActiveByStatus(filterStatus);
+    @GetMapping("/count")
+    public PetFairCountByStatusResponse countPetFairByFilterStatus(@RequestParam("filterStatus") PetFairFilterStatus filterStatus) {
+        return countPostsUseCase.countActiveByFilterStatus(filterStatus);
+    }
+
+    @GetMapping("/filter")
+    public SummaryPetFairWithCursorResponse findPetFairsByFilterStatus(@RequestParam("filterStatus") PetFairFilterStatus filterStatus,
+                                                                      @ModelAttribute Cursor cursor) {
+        return readPostsUseCase.findPetFairsByFilterStatus(filterStatus, cursor);
     }
 
     @GetMapping

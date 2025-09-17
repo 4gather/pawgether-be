@@ -4,5 +4,5 @@ import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCount
 import com.example.pawgetherbe.domain.status.PetFairFilterStatus;
 
 public interface CountPostsUseCase {
-    PetFairCountByStatusResponse countActiveByStatus(PetFairFilterStatus status);
+    PetFairCountByStatusResponse countActiveByFilterStatus(PetFairFilterStatus status);
 }
