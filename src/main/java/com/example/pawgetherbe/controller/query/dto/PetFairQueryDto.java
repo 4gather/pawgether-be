@@ -3,6 +3,7 @@ package com.example.pawgetherbe.controller.query.dto;
 import com.example.pawgetherbe.domain.status.PetFairFilterStatus;
 import com.example.pawgetherbe.domain.status.PetFairStatus;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -13,7 +14,13 @@ public final class PetFairQueryDto {
     public record ConditionRequest(
             @NotBlank(message = "검색어를 입력해주세요.")
             String keyword,
-            Long cursor
+            Cursor cursor
+    ) {}
+
+    public record Cursor(
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+            Long petFairId
     ) {}
 
     public record PetFairCarouselResponse(

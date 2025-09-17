@@ -3,6 +3,7 @@ package com.example.pawgetherbe.repository.query;
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.ConditionRequest;
+import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.Cursor;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairPosterDto;
 import com.example.pawgetherbe.domain.entity.PetFairEntity;
 import com.example.pawgetherbe.domain.entity.QPetFairEntity;
@@ -91,13 +92,12 @@ public class PetFairQueryDSLRepository {
 
     // Post Status == ACTIVE 조회/ Order By[startDate,id] == Desc 정렬
     @Transactional(readOnly = true)
-    public List<PetFairEntity> findActiveListOrderByDesc() {
+    public List<PetFairEntity> findActiveListOrderByDesc(Cursor cursor) {
         return jpaQueryFactory
                 .selectFrom(petFair)
                 .where(
-                        petFair.status.eq(PetFairStatus.ACTIVE)
-                        // nextCursor 값이 없으면 내림차순 기본 조회, 값이 존재하면 그 다음 값부터 조회
-                        // TODO: orderBy 보다 먼저 실행되므로 id로 하면 error가 발생할 듯.
+                        petFair.status.eq(PetFairStatus.ACTIVE),
+                        lessThanCursor(cursor)
                 )
                 .orderBy(petFair.startDate.desc(), petFair.id.desc())
                 .limit(11) // hasMore 계산을 위해 10+1개 가져옴
@@ -181,10 +181,14 @@ public class PetFairQueryDSLRepository {
         return (keyword == null) ? null : petFair.title.contains(keyword);
     }
 
-    private BooleanExpression lessThanCursor(Long cursor) {
-        if (cursor == null || cursor == 0) {
+    private BooleanExpression lessThanCursor(Cursor cursor) {
+        if (cursor == null || cursor.startDate() == null || cursor.petFairId() == null || cursor.petFairId() == 0) {
             return null;
         }
-        return petFair.id.lt(cursor);
+
+        BooleanExpression main = petFair.startDate.eq(cursor.startDate()).and(petFair.id.lt(cursor.petFairId()));
+        BooleanExpression tieBreaker = petFair.startDate.lt(cursor.startDate());
+
+        return main.or(tieBreaker);
     }
 }

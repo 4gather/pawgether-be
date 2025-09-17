@@ -1,13 +1,7 @@
 package com.example.pawgetherbe.service.query;
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.ConditionRequest;
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse;
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCalendarResponse;
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCarouselResponse;
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCountByStatusResponse;
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.SummaryPetFairResponse;
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.SummaryPetFairWithCursorResponse;
+import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.*;
 import com.example.pawgetherbe.domain.entity.PetFairEntity;
 import com.example.pawgetherbe.domain.status.PetFairFilterStatus;
 import com.example.pawgetherbe.mapper.query.PetFairQueryMapper;
@@ -22,9 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_CALENDAR;
-import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_POST;
-import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_POSTER;
+import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.*;
 
 @Slf4j
 @Service
@@ -66,8 +58,8 @@ public class PetFairQueryService implements ReadPostsUseCase, ReadPostByIdUseCas
 
     @Override
     @Transactional(readOnly = true)
-    public SummaryPetFairWithCursorResponse findAllPetFairs() {
-        List<PetFairEntity> activeListOrderByDesc = petFairQueryDSLRepository.findActiveListOrderByDesc();
+    public SummaryPetFairWithCursorResponse findAllPetFairs(Cursor cursor) {
+        List<PetFairEntity> activeListOrderByDesc = petFairQueryDSLRepository.findActiveListOrderByDesc(cursor);
 
         if (activeListOrderByDesc.isEmpty()) {
             throw new CustomException(NOT_FOUND_PET_FAIR_POST);

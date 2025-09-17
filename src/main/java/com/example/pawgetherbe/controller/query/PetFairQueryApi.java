@@ -1,19 +1,13 @@
 package com.example.pawgetherbe.controller.query;
 
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.ConditionRequest;
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse;
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCountByStatusResponse;
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.SummaryPetFairWithCursorResponse;
+import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.*;
 import com.example.pawgetherbe.domain.status.PetFairFilterStatus;
 import com.example.pawgetherbe.usecase.post.CountPostsUseCase;
 import com.example.pawgetherbe.usecase.post.ReadPostByIdUseCase;
 import com.example.pawgetherbe.usecase.post.ReadPostsUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -35,12 +29,12 @@ public class PetFairQueryApi {
     }
 
     @GetMapping
-    public SummaryPetFairWithCursorResponse findAllPetFairs() {
-        return readPostsUseCase.findAllPetFairs();
+    public SummaryPetFairWithCursorResponse findAllPetFairs(@ModelAttribute Cursor cursor) {
+        return readPostsUseCase.findAllPetFairs(cursor);
     }
 
     @GetMapping("/condition")
-    public SummaryPetFairWithCursorResponse findPetFairsByCondition(@Valid ConditionRequest condition) {
+    public SummaryPetFairWithCursorResponse findPetFairsByCondition(@Valid @ModelAttribute ConditionRequest condition) {
         return readPostsUseCase.findPetFairsByCondition(condition);
     }
 }
