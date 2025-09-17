@@ -1,6 +1,7 @@
 package com.example.pawgetherbe.service.query;
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
+import com.example.pawgetherbe.repository.query.UserQueryDSLRepository;
 import com.example.pawgetherbe.repository.query.UserQueryRepository;
 import com.example.pawgetherbe.usecase.users.query.SignUpQueryUseCase;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.CON
 public class UserQueryService implements SignUpQueryUseCase {
 
     private final UserQueryRepository userQueryRepository;
+    private final UserQueryDSLRepository userQueryDSLRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -29,7 +31,7 @@ public class UserQueryService implements SignUpQueryUseCase {
     @Override
     @Transactional(readOnly = true)
     public void signupNicknameCheck(String nickName) {
-        if(userQueryRepository.existsByNickName(nickName)) {
+        if(userQueryDSLRepository.existsByNickNameToLowerCase(nickName)) {
             throw new CustomException(CONFLICT_NICKNAME);
         }
     }

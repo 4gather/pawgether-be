@@ -3,7 +3,7 @@ package com.example.pawgetherbe.domain;
 import java.util.Map;
 
 public class UserContext {
-    private static final ThreadLocal<Map<String, String>> userHolder = new ThreadLocal<>();
+    private static final ThreadLocal<Map<String, String>> userHolder = ThreadLocal.withInitial(java.util.HashMap::new);
 
 //    public static void setUserEmail(String userEmail) {
 //        userHolder.get().put("userEmail", userEmail);

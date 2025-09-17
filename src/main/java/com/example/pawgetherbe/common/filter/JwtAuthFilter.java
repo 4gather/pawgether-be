@@ -13,10 +13,13 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.util.AntPathMatcher;
 
 import java.io.IOException;
-
+import java.util.List;
+@Slf4j
 @RequiredArgsConstructor
 public class JwtAuthFilter implements Filter {
 
@@ -28,11 +31,23 @@ public class JwtAuthFilter implements Filter {
 
     private final JwtUtil jwtUtil;
 
+    private final AntPathMatcher ant = new AntPathMatcher();
+    private static final List<String> EXCLUDES = List.of(
+           "/api/v1/account/signup", "/api/v1/account"
+    );
+
+
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         try {
             HttpServletRequest request = (HttpServletRequest) servletRequest;
             HttpServletResponse response = (HttpServletResponse) servletResponse;
+            String uri = request.getRequestURI();
+
+            if (EXCLUDES.stream().anyMatch(p -> ant.match(p, uri))) {
+                filterChain.doFilter(servletRequest, servletResponse);
+                return;
+            }
 
             String accessToken = getToken(request);
 
@@ -62,7 +77,7 @@ public class JwtAuthFilter implements Filter {
 //        String requestUserEmail = jwtUtil.getUserEmailFromToken(accessToken);
         String requestUserRole = jwtUtil.getUserRoleFromToken(accessToken);
 //        String requestUserNickname = jwtUtil.getUserNicknameFromToken(accessToken);
-
+        log.info("requestUserId = {}, requestUserRole = {}", requestUserId, requestUserRole);
         UserContext.setUserId(requestUserId);
 //        UserContext.setUserEmail(requestUserEmail);
         UserContext.setUserRole(requestUserRole);

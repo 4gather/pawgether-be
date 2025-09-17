@@ -228,13 +228,7 @@ class UserCommandServiceTest: FreeSpec({
 
     "로그인" - {
         val encryptPassword = EncryptUtil.passwordEncode("testUser123!@#")
-        val savedRequest = SignInUserResponse(
-            "accessToken",
-            "Google",
-            "testUser1@test.com",
-            "tester",
-            "/img/2025/05/05/202505.webp"
-        )
+
         "2xx] 정상 로그인" - {
             // Given
             val signInRequest = SignInUserRequest("testUser1@test.com", "testUser123!@#")
