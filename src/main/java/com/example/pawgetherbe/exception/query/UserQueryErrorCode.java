@@ -5,7 +5,8 @@ import org.springframework.http.HttpStatus;
 
 public enum UserQueryErrorCode implements ErrorCode {
     INVALID_FORMAT_EMAIL(HttpStatus.BAD_REQUEST, "INVALID_FORMAT_EMAIL", "email 형식을 지켜주세요"),
-    INVALID_FORMAT_NICKNAME(HttpStatus.BAD_REQUEST, "INVALID_FORMAT_NICKNAME", "nickname 은 형식을 지켜주세요")
+    INVALID_FORMAT_NICKNAME(HttpStatus.BAD_REQUEST, "INVALID_FORMAT_NICKNAME", "nickname 은 형식을 지켜주세요"),
+    NOT_FOUND_USER_CALENDAR(HttpStatus.NOT_FOUND,"NOT_FOUND_USER_CALENDAR","존재하지 않는 계정입니다.")
     ;
 
     private final String message;
