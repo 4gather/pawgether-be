@@ -10,9 +10,10 @@ import java.util.List;
 
 @Mapper
 public interface CommentQueryMapper {
-    @Mapping(target = "commentId", source = "id")
-    @Mapping(target = "nickName", source = "user.nickName")
-    @Mapping(target = "petFairId", source = "petFair.id")
-    ReadCommentDto toReadCommentDto(CommentEntity comment);
+    @Mapping(target = "commentId", source = "comment.id")
+    @Mapping(target = "nickName", source = "comment.user.nickName")
+    @Mapping(target = "petFairId", source = "comment.petFair.id")
+    @Mapping(target = "heart", source = "count")
+    ReadCommentDto toReadCommentDto(CommentEntity comment, int count);
     CommentQueryDto.ReadCommentResponse toReadCommentResponse(List<ReadCommentDto> comments, boolean hasMore, long nextCursor);
 }
