@@ -5,6 +5,8 @@ import org.springframework.http.HttpStatus;
 
 public enum ReplyCommandErrorCode implements ErrorCode {
     NOT_FOUND_REPLY(HttpStatus.NOT_FOUND, "NOT_FOUND_REPLY", "답글이 존재하지 않습니다."),
+    CREATE_INTERNAL_REPLY(HttpStatus.INTERNAL_SERVER_ERROR, "CREATE_INTERNAL_REPLY", "답글 생성중 오류가 발생했습니다."),
+    DELETE_CONFLICT_REPLY(HttpStatus.CONFLICT, "DELETE_CONFLICT_REPLY", "이미 삭제된 답글입니다."),
     ;
 
     private final String message;

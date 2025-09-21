@@ -1,10 +1,10 @@
 package com.example.pawgetherbe.service.command;
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
-import com.example.pawgetherbe.controller.command.dto.ReplyCommandDto.ReplyUpdateResponse;
-import com.example.pawgetherbe.controller.command.dto.ReplyCommandDto.ReplyUpdateRequest;
 import com.example.pawgetherbe.controller.command.dto.ReplyCommandDto.ReplyCreateRequest;
 import com.example.pawgetherbe.controller.command.dto.ReplyCommandDto.ReplyCreateResponse;
+import com.example.pawgetherbe.controller.command.dto.ReplyCommandDto.ReplyUpdateRequest;
+import com.example.pawgetherbe.controller.command.dto.ReplyCommandDto.ReplyUpdateResponse;
 import com.example.pawgetherbe.domain.status.ReplyStatus;
 import com.example.pawgetherbe.mapper.command.ReplyCommandMapper;
 import com.example.pawgetherbe.repository.command.CommentCommandRepository;
@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static com.example.pawgetherbe.domain.UserContext.getUserId;
 import static com.example.pawgetherbe.exception.command.CommentCommandErrorCode.NOT_FOUND_COMMENT;
+import static com.example.pawgetherbe.exception.command.ReplyCommandErrorCode.CREATE_INTERNAL_REPLY;
+import static com.example.pawgetherbe.exception.command.ReplyCommandErrorCode.DELETE_CONFLICT_REPLY;
 import static com.example.pawgetherbe.exception.command.ReplyCommandErrorCode.NOT_FOUND_REPLY;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.NOT_FOUND_USER;
 
@@ -49,9 +51,13 @@ public class ReplyCommandService implements RegistryReplyUseCase, EditReplyUseCa
                 .status(ReplyStatus.ACTIVE)
                 .build();
 
-        var reply = replyCommandRepository.save(replyEntity);
-
-        return replyCommandMapper.toReplyCreateResponse(reply);
+        try{
+            var reply = replyCommandRepository.save(replyEntity);
+            return replyCommandMapper.toReplyCreateResponse(reply);
+        } catch (Exception e){
+            log.error(e.getMessage());
+            throw new CustomException(CREATE_INTERNAL_REPLY);
+        }
     }
 
     @Override
@@ -80,7 +86,9 @@ public class ReplyCommandService implements RegistryReplyUseCase, EditReplyUseCa
         assertCommentExists(commentId);
 
         var replyEntity = replyCommandRepository.findById(replyId).orElseThrow(() -> new CustomException(NOT_FOUND_REPLY));
-
+        if(replyEntity.getStatus().equals(ReplyStatus.REMOVED)){
+            throw new CustomException(DELETE_CONFLICT_REPLY);
+        }
         replyEntity.updateStatus(ReplyStatus.REMOVED);
     }
 
