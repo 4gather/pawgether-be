@@ -18,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.example.pawgetherbe.exception.command.CommentCommandErrorCode.CREATE_INTERNAL_COMMENT;
+import static com.example.pawgetherbe.exception.command.CommentCommandErrorCode.DELETE_CONFLICT_COMMENT;
 import static com.example.pawgetherbe.exception.command.CommentCommandErrorCode.NOT_FOUND_COMMENT;
 import static com.example.pawgetherbe.exception.command.PetFairCommandErrorCode.NOT_FOUND_PET_FAIR;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.NOT_FOUND_USER;
@@ -50,9 +52,13 @@ public class CommentCommandService implements RegistryCommentUseCase, EditCommen
                                     .status(CommentStatus.ACTIVE)
                                     .build();
 
-        var comment = commentCommandRepository.save(commentEntityBuilder);
-
-        return commentCommandMapper.toCreateResponse(comment);
+        try {
+            var comment = commentCommandRepository.save(commentEntityBuilder);
+            return commentCommandMapper.toCreateResponse(comment);
+        }catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new CustomException(CREATE_INTERNAL_COMMENT);
+        }
     }
 
     @Override
@@ -79,6 +85,9 @@ public class CommentCommandService implements RegistryCommentUseCase, EditCommen
         assertPetFairExists(petfairId);
 
         var comment = commentCommandRepository.findById(commentId).orElseThrow(() -> new CustomException(NOT_FOUND_COMMENT));
+        if(comment.getStatus().equals(CommentStatus.REMOVED)) {
+            throw new CustomException(DELETE_CONFLICT_COMMENT);
+        }
 
         comment.updateStatus(CommentStatus.REMOVED);
     }
