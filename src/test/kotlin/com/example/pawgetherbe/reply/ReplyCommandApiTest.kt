@@ -9,7 +9,6 @@ import com.example.pawgetherbe.domain.UserContext
 import com.example.pawgetherbe.exception.command.CommentCommandErrorCode
 import com.example.pawgetherbe.exception.command.ReplyCommandErrorCode
 import com.example.pawgetherbe.exception.command.UserCommandErrorCode
-import com.example.pawgetherbe.repository.command.UserCommandRepository
 import com.example.pawgetherbe.usecase.reply.DeleteReplyUseCase
 import com.example.pawgetherbe.usecase.reply.EditReplyUseCase
 import com.example.pawgetherbe.usecase.reply.RegistryReplyUseCase
