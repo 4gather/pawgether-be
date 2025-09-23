@@ -2,14 +2,15 @@ package com.example.pawgetherbe.patfair
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException
 import com.example.pawgetherbe.controller.command.dto.PetFairCommandDto
+import com.example.pawgetherbe.controller.command.dto.PetFairCommandDto.UpdatePetFairRequest
+import com.example.pawgetherbe.controller.command.dto.PetFairCommandDto.UpdatePetFairResponse
 import com.example.pawgetherbe.domain.UserContext
 import com.example.pawgetherbe.domain.entity.PetFairEntity
 import com.example.pawgetherbe.domain.entity.PetFairImageEntity
 import com.example.pawgetherbe.domain.entity.UserEntity
 import com.example.pawgetherbe.domain.status.PetFairStatus
-import com.example.pawgetherbe.exception.command.PetFairCommandErrorCode.IMAGE_CONVERT_FAIL
-import com.example.pawgetherbe.exception.command.PetFairCommandErrorCode.PET_FAIR_CREATE_FAIL
-import com.example.pawgetherbe.exception.command.PetFairCommandErrorCode.REMOVED_PET_FAIR
+import com.example.pawgetherbe.domain.status.UserRole
+import com.example.pawgetherbe.exception.command.PetFairCommandErrorCode.*
 import com.example.pawgetherbe.mapper.command.PetFairCommandMapper
 import com.example.pawgetherbe.repository.command.PetFairCommandRepository
 import com.example.pawgetherbe.repository.command.UserCommandRepository
@@ -17,11 +18,8 @@ import com.example.pawgetherbe.service.command.PetFairCommandService
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
-import io.mockk.verify
+import io.kotest.matchers.shouldNotBe
+import io.mockk.*
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
@@ -44,6 +42,7 @@ class PetFairCommandServiceTest: FreeSpec({
     lateinit var r2Client: S3Client
 
     lateinit var req: PetFairCommandDto.PetFairCreateRequest
+    lateinit var updateRequest: UpdatePetFairRequest
     lateinit var user: UserEntity
     lateinit var entity: PetFairEntity
 
@@ -161,11 +160,91 @@ class PetFairCommandServiceTest: FreeSpec({
         }
     }
 
+    "updatePost" - {
+        "2xx] 업데이트 성공" - {
+            // given
+            val updateResponse = UpdatePetFairResponse(
+                1L,
+                "test title",
+                "test content",
+                "imageUrl",
+                "petFairUrl",
+                "simpleAddress",
+                "detailAddress",
+                "2025-09-15",
+                "2025-09-16",
+                "02-1234-5678",
+                listOf("images/2025/09/0905-1.webp", "images/2025/09/0905-2.webp"),
+                0L,
+                "2025-09-01",
+                "2025-09-02"
+            )
+            val userEntity = UserEntity.builder().role(UserRole.ADMIN).build()
+            val petFairEntity = PetFairEntity.builder()
+                .user(userEntity)
+                .build()
+
+            every { UserContext.getUserRole() } returns UserRole.ADMIN.toString()
+            every { petFairCommandRepository.findById(any<Long>()) } returns Optional.of(petFairEntity)
+            every { entity.updatePetFair(any<String>(), any<List<PetFairImageEntity>>(), any<UpdatePetFairRequest>()) } just runs
+            every { petFairCommandMapper.toUpdatePetFairResponse(any<PetFairEntity>()) } returns updateResponse
+
+            every { updateRequest.startDate } returns "2025-09-05"
+            every { updateRequest.endDate } returns "2025-09-06"
+            every { updateRequest.posterImage() } returns webp("poster.webp", "poster")
+            every { updateRequest.images() } returns listOf(webp("a.webp", "i1"), webp("b.webp", "i2"))
+
+            // when
+            val result = petFairCommandService.updatePetFairPost(1L, updateRequest)
+
+            // then
+            "startDate & endDate 업데이트 검증" {
+                result.startDate shouldNotBe  null
+                result.startDate shouldBe "2025-09-15"
+                result.endDate shouldNotBe null
+                result.endDate shouldBe "2025-09-16"
+            }
+            "images 업데이트 검증" {
+                result.images shouldNotBe null
+                result.images.size shouldBe 2
+            }
+
+        }
+
+        "4xx] 요청 게시글이 없으면 예외" {
+            // Given
+            every { petFairCommandRepository.findById(any<Long>()) } returns Optional.empty()
+
+            // When
+            val exception = shouldThrow<CustomException> {
+                petFairCommandService.updatePetFairPost(1L, updateRequest)
+            }
+
+            // Then
+            exception.errorCode shouldBe NOT_FOUND_PET_FAIR
+        }
+
+        "4xx] 권한이 없으면 예외" {
+            // Given
+            every { petFairCommandRepository.findById(any<Long>()) } returns Optional.of(entity)
+            every { UserContext.getUserRole() } returns UserRole.USER_EMAIL.toString()
+
+            // When
+            val exception = shouldThrow<CustomException> {
+                petFairCommandService.updatePetFairPost(1L, updateRequest)
+            }
+
+            // Then
+            exception.errorCode shouldBe UNAUTHORIZED_UPDATE_PET_FAIR
+        }
+    }
+
     beforeTest {
         mockkStatic(UserContext::class)
 
         user = mockk()
         req = mockk(relaxed = true)
+        updateRequest = mockk(relaxed = true)
         entity = mockk(relaxed = true)
         petFairCommandService = mockk(relaxed = true)
         userCommandRepository = mockk(relaxed = true)
