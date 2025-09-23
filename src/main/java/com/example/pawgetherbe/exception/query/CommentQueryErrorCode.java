@@ -3,20 +3,18 @@ package com.example.pawgetherbe.exception.query;
 import com.example.pawgetherbe.common.exceptionHandler.ErrorCode;
 import org.springframework.http.HttpStatus;
 
-public enum UserQueryErrorCode implements ErrorCode {
-    INVALID_FORMAT_EMAIL(HttpStatus.BAD_REQUEST, "INVALID_FORMAT_EMAIL", "email 형식을 지켜주세요"),
-    INVALID_FORMAT_NICKNAME(HttpStatus.BAD_REQUEST, "INVALID_FORMAT_NICKNAME", "nickname 은 형식을 지켜주세요"),
-    NOT_FOUND_USER_CALENDAR(HttpStatus.NOT_FOUND,"NOT_FOUND_USER_CALENDAR","존재하지 않는 계정입니다.")
+public enum CommentQueryErrorCode implements ErrorCode {
+    NOT_FOUND_COMMENT_CALENDAR(HttpStatus.NOT_FOUND, "NOT_FOUND_COMMENT_CALENDAR", "댓글이 존재하지 않습니다."),
     ;
 
     private final String message;
     private final String code;
     private final HttpStatus httpStatus;
 
-    UserQueryErrorCode(HttpStatus httpStatus, String code, String message) {
+    CommentQueryErrorCode(HttpStatus httpStatus, String code, String message) {
         this.message = message;
-        this.httpStatus = httpStatus;
         this.code = code;
+        this.httpStatus = httpStatus;
     }
 
     @Override

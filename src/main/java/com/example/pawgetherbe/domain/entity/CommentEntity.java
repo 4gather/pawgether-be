@@ -1,7 +1,10 @@
 package com.example.pawgetherbe.domain.entity;
 
+import com.example.pawgetherbe.domain.status.CommentStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,7 +20,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +27,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Builder
+@Builder(toBuilder = true)
 @Table(name = "comments")
 public class CommentEntity extends BaseEntity {
     @Id
@@ -37,14 +39,9 @@ public class CommentEntity extends BaseEntity {
     @Column(name = "content", nullable = false)
     private String content;
 
-    @Column(name = "comment_created_at")
-    private Instant commentCreatedAt;
-
-    @Column(name = "comment_updated_at")
-    private Instant commentUpdatedAt;
-
     @Column(name = "status", length = 255)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private CommentStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -56,4 +53,12 @@ public class CommentEntity extends BaseEntity {
 
     @OneToMany(mappedBy = "comment")
     private List<ReplyEntity> replies = new ArrayList<>();
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
+
+    public void updateStatus(CommentStatus status) {
+        this.status = status;
+    }
 }
