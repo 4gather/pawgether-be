@@ -65,8 +65,6 @@ class PetFairQueryApiTest {
         val imageDtoList = listOf(
             "images/content/2025/05/0515-1.webp",
             "images/content/2025/05/0515-2.webp"
-//            PetFairImageUrlResponse("images/content/2025/05/0515-1.webp"),
-//            PetFairImageUrlResponse("images/content/2025/05/0515-2.webp")
         )
 
         whenever(readPostByIdUSeCase.readDetailPetFair(petFairId)).thenReturn(
@@ -143,7 +141,7 @@ class PetFairQueryApiTest {
             PetFairFilterStatus.PET_FAIR_FINISHED -> 3L
         }
 
-        whenever(countPostsUseCase.countActiveByStatus(status))
+        whenever(countPostsUseCase.countActiveByFilterStatus(status))
             .thenReturn(PetFairCountByStatusResponse(status, expectedCount))
 
         mockMvc.get("/api/v1/petfairs/count/{filterStatus}", status)
