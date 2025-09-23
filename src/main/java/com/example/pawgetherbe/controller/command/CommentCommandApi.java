@@ -10,6 +10,7 @@ import com.example.pawgetherbe.usecase.comment.RegistryCommentUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,12 +31,12 @@ public class CommentCommandApi {
     private final DeleteCommentUseCase deleteCommentUseCase;
 
     @PostMapping("/{petfairId}")
-    public CommentCreateResponse commentCreate(@PathVariable long petfairId, @RequestBody CommentCreateRequest request) {
+    public CommentCreateResponse commentCreate(@PathVariable long petfairId, @RequestBody @Validated CommentCreateRequest request) {
         return registryCommentUseCase.createComment(petfairId, request);
     }
 
     @PatchMapping("/{petfairId}/{commentId}")
-    public CommentUpdateResponse commentUpdate(@PathVariable long petfairId, @PathVariable long commentId, @RequestBody CommentUpdateRequest request) {
+    public CommentUpdateResponse commentUpdate(@PathVariable long petfairId, @PathVariable long commentId, @RequestBody @Validated CommentUpdateRequest request) {
         return editCommentUseCase.updateComment(petfairId, commentId, request);
     }
 
