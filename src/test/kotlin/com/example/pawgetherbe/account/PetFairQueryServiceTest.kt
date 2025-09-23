@@ -245,19 +245,19 @@ class PetFairQueryServiceTest: FreeSpec ({
             var countByActive = PetFairCountByStatusResponse(PetFairFilterStatus.PET_FAIR_ACTIVE, 2L)
             var countByFinished = PetFairCountByStatusResponse(PetFairFilterStatus.PET_FAIR_FINISHED, 3L)
 
-            every { petFairQueryDSLRepository.countActiveByStatus(PetFairFilterStatus.PET_FAIR_ALL) } returns 1L
-            every { petFairQueryDSLRepository.countActiveByStatus(PetFairFilterStatus.PET_FAIR_ACTIVE) } returns 2L
-            every { petFairQueryDSLRepository.countActiveByStatus(PetFairFilterStatus.PET_FAIR_FINISHED) } returns 3L
+            every { petFairQueryDSLRepository.countActiveByFilterStatus(PetFairFilterStatus.PET_FAIR_ALL) } returns 1L
+            every { petFairQueryDSLRepository.countActiveByFilterStatus(PetFairFilterStatus.PET_FAIR_ACTIVE) } returns 2L
+            every { petFairQueryDSLRepository.countActiveByFilterStatus(PetFairFilterStatus.PET_FAIR_FINISHED) } returns 3L
 
             // When
-            val statusAllResult = petFairQueryService.countActiveByStatus(PetFairFilterStatus.PET_FAIR_ALL)
-            verify(exactly = 1) { petFairQueryDSLRepository.countActiveByStatus(PetFairFilterStatus.PET_FAIR_ALL) }
+            val statusAllResult = petFairQueryService.countActiveByFilterStatus(PetFairFilterStatus.PET_FAIR_ALL)
+            verify(exactly = 1) { petFairQueryDSLRepository.countActiveByFilterStatus(PetFairFilterStatus.PET_FAIR_ALL) }
 
-            val statusActiveResult  = petFairQueryService.countActiveByStatus(PetFairFilterStatus.PET_FAIR_ACTIVE)
-            verify(exactly = 1) { petFairQueryDSLRepository.countActiveByStatus(PetFairFilterStatus.PET_FAIR_ACTIVE) }
+            val statusActiveResult  = petFairQueryService.countActiveByFilterStatus(PetFairFilterStatus.PET_FAIR_ACTIVE)
+            verify(exactly = 1) { petFairQueryDSLRepository.countActiveByFilterStatus(PetFairFilterStatus.PET_FAIR_ACTIVE) }
 
-            val statusFinishedResult  = petFairQueryService.countActiveByStatus(PetFairFilterStatus.PET_FAIR_FINISHED)
-            verify(exactly = 1) { petFairQueryDSLRepository.countActiveByStatus(PetFairFilterStatus.PET_FAIR_FINISHED) }
+            val statusFinishedResult  = petFairQueryService.countActiveByFilterStatus(PetFairFilterStatus.PET_FAIR_FINISHED)
+            verify(exactly = 1) { petFairQueryDSLRepository.countActiveByFilterStatus(PetFairFilterStatus.PET_FAIR_FINISHED) }
 
             "PET_FAIR_ALL 상태 count" {
                 // Then
@@ -306,19 +306,21 @@ class PetFairQueryServiceTest: FreeSpec ({
                 summaryPetFairDtoList.add(dto)
             }
 
+            val cursor = Cursor(LocalDate.now(), 1L)
+
             val summaryPetFairWithCursorDtoList = SummaryPetFairWithCursorResponse(
                 summaryPetFairDtoList,true,2L
             )
             for (i in 10 downTo 1) {
                 every { petFairQueryMapper.toSummaryPetFair(petFairEntityList.get(i-1)) } returns summaryPetFairDtoList.get(i-1)
             }
-            every { petFairQueryDSLRepository.findActiveListOrderByDesc() } returns petFairEntityList
+            every { petFairQueryDSLRepository.findActiveListOrderByDesc(any<Cursor>()) } returns petFairEntityList
 
             // When
-            val result = petFairQueryService.findAllPetFairs()
+            val result = petFairQueryService.findAllPetFairs(cursor)
 
             // Then
-            verify(exactly = 1) { petFairQueryDSLRepository.findActiveListOrderByDesc() }
+            verify(exactly = 1) { petFairQueryDSLRepository.findActiveListOrderByDesc(cursor) }
 
             "response - 내림차순" {
                 for (i in 0 until result.petFairSummaries.lastIndex) {
@@ -362,19 +364,21 @@ class PetFairQueryServiceTest: FreeSpec ({
                 summaryPetFairDtoList.add(dto)
             }
 
+            val cursor = Cursor(LocalDate.now(), 1L)
+
             val summaryPetFairWithCursorDtoList = SummaryPetFairWithCursorResponse(
                 summaryPetFairDtoList,false,1L
             )
             for (i in 5 downTo 1) {
                 every { petFairQueryMapper.toSummaryPetFair(petFairEntityList.get(i-1)) } returns summaryPetFairDtoList.get(i-1)
             }
-            every { petFairQueryDSLRepository.findActiveListOrderByDesc() } returns petFairEntityList
+            every { petFairQueryDSLRepository.findActiveListOrderByDesc(any<Cursor>()) } returns petFairEntityList
 
             // When
-            val result = petFairQueryService.findAllPetFairs()
+            val result = petFairQueryService.findAllPetFairs(cursor)
 
             // Then
-            verify(exactly = 1) { petFairQueryDSLRepository.findActiveListOrderByDesc() }
+            verify(exactly = 1) { petFairQueryDSLRepository.findActiveListOrderByDesc(cursor) }
 
             "response - 내림차순" {
                 for (i in 0 until result.petFairSummaries.lastIndex) {
@@ -394,7 +398,8 @@ class PetFairQueryServiceTest: FreeSpec ({
     "검색 조회" - {
         "2xx] condition 조건으로 검색 조회" - {
             // Given
-            val condition = ConditionRequest("Test", 6L)
+            val cursor = Cursor(LocalDate.now(), 1L)
+            val condition = ConditionRequest("Test", cursor)
             val petFairEntityList = mutableListOf<PetFairEntity>()
 
             // cursor(6L) 보다 작은 id 값 조회(where 절)

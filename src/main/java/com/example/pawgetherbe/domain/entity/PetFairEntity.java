@@ -1,29 +1,17 @@
 package com.example.pawgetherbe.domain.entity;
 
+import com.example.pawgetherbe.common.exceptionHandler.CustomException;
+import com.example.pawgetherbe.controller.command.dto.PetFairCommandDto.UpdatePetFairRequest;
 import com.example.pawgetherbe.domain.status.PetFairStatus;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+
+import static com.example.pawgetherbe.exception.command.PetFairCommandErrorCode.EMPTY_ANY_FIELD;
 
 @Entity
 @Getter
@@ -117,5 +105,37 @@ public class PetFairEntity extends BaseEntity {
 
     public void updateStatus(PetFairStatus status) {
         this.status = status;
+    }
+
+    public void updatePetFair(String posterImageUrl, List<PetFairImageEntity> pairImages, UpdatePetFairRequest request) {
+        try {
+            Objects.requireNonNull(request.title(), "title을 입력해주세요.");
+            Objects.requireNonNull(request.content(), "content를 입력해주세요.");
+            Objects.requireNonNull(posterImageUrl, "posterImageUrl을 입력해주세요.");
+            Objects.requireNonNull(request.simpleAddress(), "simpleAddress를 입력해주세요.");
+            Objects.requireNonNull(request.detailAddress(), "detailAddress를 입력해주세요.");
+            Objects.requireNonNull(request.startDate(), "startDate를 입력해주세요.");
+            Objects.requireNonNull(request.endDate(), "endDate를 입력해주세요.");
+            Objects.requireNonNull(request.telNumber(), "telNumber를 입력해주세요.");
+            Objects.requireNonNull(request.petFairUrl(), "petFairUrl을 입력해주세요.");
+            Objects.requireNonNull(pairImages, "pairImages를 입력해주세요.");
+        } catch (NullPointerException e) {
+            throw new CustomException(EMPTY_ANY_FIELD);
+        }
+
+        this.title = request.title();
+        this.content = request.content();
+        this.posterImageUrl = posterImageUrl;
+        this.simpleAddress = request.simpleAddress();
+        this.detailAddress = request.detailAddress();
+        this.startDate = LocalDate.parse(request.startDate());
+        this.endDate = LocalDate.parse(request.endDate());
+        this.telNumber = request.telNumber();
+        this.petFairUrl = request.petFairUrl();
+
+        this.pairImages.clear();
+        for (PetFairImageEntity img : pairImages) {
+            this.addImage(img);
+        }
     }
 }

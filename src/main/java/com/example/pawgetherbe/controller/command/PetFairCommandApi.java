@@ -1,21 +1,18 @@
 package com.example.pawgetherbe.controller.command;
 
+import com.example.pawgetherbe.controller.command.dto.PetFairCommandDto;
 import com.example.pawgetherbe.controller.command.dto.PetFairCommandDto.PetFairCreateRequest;
 import com.example.pawgetherbe.controller.command.dto.PetFairCommandDto.PetFairCreateResponse;
+import com.example.pawgetherbe.controller.command.dto.PetFairCommandDto.UpdatePetFairRequest;
 import com.example.pawgetherbe.usecase.post.DeletePostUseCase;
+import com.example.pawgetherbe.usecase.post.EditPostUseCase;
 import com.example.pawgetherbe.usecase.post.RegistryPostUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/petfairs")
@@ -25,6 +22,7 @@ public class PetFairCommandApi {
 
     private final RegistryPostUseCase registryPostUseCase;
     private final DeletePostUseCase deletePostUseCase;
+    private final EditPostUseCase editPostUseCase;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.OK)
@@ -36,5 +34,14 @@ public class PetFairCommandApi {
     @ResponseStatus(HttpStatus.OK)
     public void PetFairPostDelete(@PathVariable long petfairId) {
         deletePostUseCase.deletePost(petfairId);
+    }
+
+    @PatchMapping(
+            value = "/{petfairId}",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public PetFairCommandDto.UpdatePetFairResponse editPetFairPost(@PathVariable("petfairId") Long petFairId,
+                                                                   @Valid @ModelAttribute UpdatePetFairRequest request) {
+        return editPostUseCase.updatePetFairPost(petFairId, request);
     }
 }
