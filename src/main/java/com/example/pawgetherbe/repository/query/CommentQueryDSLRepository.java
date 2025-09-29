@@ -1,5 +1,6 @@
 package com.example.pawgetherbe.repository.query;
 
+import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.MainCommentResponse;
 import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.ReadCommentResponse;
 import com.example.pawgetherbe.domain.entity.QCommentEntity;
 import com.example.pawgetherbe.domain.entity.QLikeEntity;
@@ -54,6 +55,32 @@ public class CommentQueryDSLRepository {
             commentList = commentList.subList(0, 10);
         }
         return commentQueryMapper.toReadCommentResponse(commentList, hasMore, nextCursor);
+    }
+
+    @Transactional(readOnly = true)
+    public MainCommentResponse mainComments() {
+        List<Tuple> comments = jpaQueryFactory
+                .select(commentEntity,likeEntity.id.count())
+                .from(commentEntity)
+                .leftJoin(likeEntity).on(
+                        commentEntity.id.eq(likeEntity.targetId),
+                        likeEntity.targetType.eq("comment")
+                )
+                .where(
+                        commentEntity.status.eq(CommentStatus.ACTIVE)
+                )
+                .groupBy(commentEntity.id)
+                .orderBy(commentEntity.createdAt.desc())
+                .limit(10)
+                .fetch();
+
+        var commentList = comments.stream()
+                .map(t -> commentQueryMapper.toMainCommentResponse(
+                        t.get(commentEntity),
+                        t.get(likeEntity.id.count()).intValue()
+                ))
+                .toList();
+        return new MainCommentResponse(commentList);
     }
 
     private BooleanExpression cursorCondition(long cursor) {

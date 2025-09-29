@@ -19,4 +19,18 @@ public final class CommentQueryDto {
             String updatedAt,
             int heart
     ) {}
+
+    public record MainCommentResponse(
+            List<MainCommentDto> comments
+    ) {}
+
+    public record MainCommentDto(
+            long commentId,
+            long petFairId,
+            String nickName,
+            String content,
+            String createdAt,
+            String updatedAt,
+            int heart
+    ) {}
 }
