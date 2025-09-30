@@ -1,6 +1,6 @@
 package com.example.pawgetherbe.controller.query;
 
-import com.example.pawgetherbe.controller.query.dto.CommentQueryDto;
+import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.MainCommentResponse;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairCarouselResponse;
 import com.example.pawgetherbe.usecase.comment.ReadCommentsUseCase;
 import com.example.pawgetherbe.usecase.post.ReadPostsUseCase;
@@ -25,7 +25,7 @@ public class PetFairMainQueryApi {
     }
 
     @GetMapping("/comments")
-    public CommentQueryDto.MainCommentResponse mainComments() {
+    public MainCommentResponse mainComments() {
         return readCommentsUseCase.mainComments();
     }
 }
