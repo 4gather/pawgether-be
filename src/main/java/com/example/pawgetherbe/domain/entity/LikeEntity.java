@@ -34,6 +34,14 @@ public class LikeEntity extends BaseEntity{
     private String targetType;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "userId", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
+
+    public void addUser(UserEntity userEntity) {
+        this.user = userEntity;
+        userEntity.getLikeEntities().add(this);
+    }
+    public void removeUser(UserEntity userEntity) {
+        userEntity.getLikeEntities().remove(this);
+    }
 }
