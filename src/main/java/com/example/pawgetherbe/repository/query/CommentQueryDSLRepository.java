@@ -1,7 +1,5 @@
 package com.example.pawgetherbe.repository.query;
 
-import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.CommentCountDto;
-import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.CommentCountResponse;
 import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.MainCommentResponse;
 import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.ReadCommentResponse;
 import com.example.pawgetherbe.domain.entity.QCommentEntity;
@@ -83,22 +81,6 @@ public class CommentQueryDSLRepository {
                 ))
                 .toList();
         return new MainCommentResponse(commentList);
-    }
-
-    @Transactional(readOnly = true)
-    public CommentCountResponse commentCountResponse(long petfairId) {
-        Long count = jpaQueryFactory.select(commentEntity.id.count())
-                    .from(commentEntity)
-                    .where(
-                        commentEntity.petFair.id.eq(petfairId),
-                        commentEntity.status.eq(CommentStatus.ACTIVE))
-                    .fetchOne();
-
-        long safeCount = (count == null) ? 0L : count;
-
-        var commentCountDto = new CommentCountDto("petFair", petfairId, safeCount);
-
-        return new CommentCountResponse(commentCountDto);
     }
 
     private BooleanExpression cursorCondition(long cursor) {

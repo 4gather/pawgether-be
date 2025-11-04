@@ -1,7 +1,6 @@
 package com.example.pawgetherbe.service.query;
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
-import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.CommentCountResponse;
 import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.MainCommentResponse;
 import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.ReadCommentResponse;
 import com.example.pawgetherbe.repository.query.CommentQueryDSLRepository;
@@ -36,13 +35,5 @@ public class CommentQueryService implements ReadCommentsUseCase {
             throw new CustomException(NOT_FOUND_COMMENT_CALENDAR);
         }
         return comments;
-    }
-
-    @Override
-    public CommentCountResponse commentCount(long petfairId) {
-        if (!petFairQueryRepository.existsById(petfairId)) {
-            throw new CustomException(NOT_FOUND_PET_FAIR_CALENDAR);
-        }
-        return commentQueryDSLRepository.commentCountResponse(petfairId);
     }
 }

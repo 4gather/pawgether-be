@@ -1,7 +1,6 @@
 package com.example.pawgetherbe.service.query;
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
-import com.example.pawgetherbe.controller.query.dto.ReplyQueryDto.ReplyCountResponse;
 import com.example.pawgetherbe.controller.query.dto.ReplyQueryDto.ReplyReadResponse;
 import com.example.pawgetherbe.repository.query.CommentQueryRepository;
 import com.example.pawgetherbe.repository.query.ReplyQueryDSLRepository;
@@ -9,8 +8,6 @@ import com.example.pawgetherbe.usecase.reply.ReadRepliesUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 import static com.example.pawgetherbe.exception.query.CommentQueryErrorCode.NOT_FOUND_COMMENT_CALENDAR;
 
@@ -31,13 +28,5 @@ public class ReplyQueryService implements ReadRepliesUseCase {
         }
 
         return replyQueryDSLRepository.readReplies(commentId, cursor);
-    }
-
-    @Override
-    public ReplyCountResponse replyCountResponse(List<Long> commentIdList) {
-        if (commentIdList == null || commentIdList.isEmpty()) {
-            throw new CustomException(NOT_FOUND_COMMENT_CALENDAR);
-        }
-        return replyQueryDSLRepository.countReplies(commentIdList);
     }
 }

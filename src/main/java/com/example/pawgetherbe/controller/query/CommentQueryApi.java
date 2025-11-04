@@ -1,6 +1,5 @@
 package com.example.pawgetherbe.controller.query;
 
-import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.CommentCountResponse;
 import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.ReadCommentResponse;
 import com.example.pawgetherbe.usecase.comment.ReadCommentsUseCase;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +21,5 @@ public class CommentQueryApi {
     @GetMapping("{petfairId}")
     public ReadCommentResponse readComments(@PathVariable("petfairId") long petfairId, @RequestParam(required = false, defaultValue = "0") long cursor) {
         return readCommentsUseCase.readComments(petfairId, cursor);
-    }
-
-    @GetMapping("/count/{petfairId}")
-    public CommentCountResponse commentCountResponse(@PathVariable("petfairId") long petfairId) {
-        return readCommentsUseCase.commentCount(petfairId);
     }
 }

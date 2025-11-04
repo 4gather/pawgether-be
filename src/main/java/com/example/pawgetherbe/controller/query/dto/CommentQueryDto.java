@@ -33,14 +33,4 @@ public final class CommentQueryDto {
             String updatedAt,
             int heart
     ) {}
-
-    public record CommentCountDto(
-            String targetType,
-            long targetId,
-            long count
-    ) {}
-
-    public record CommentCountResponse(
-            CommentCountDto CommentCount
-    ) {}
 }

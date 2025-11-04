@@ -19,14 +19,4 @@ public final class ReplyQueryDto {
             String updatedAt,
             int heart
     ) {}
-
-    public record ReplyCountDto(
-            String targetType,
-            long targetId,
-            long count
-    ) {}
-
-    public record ReplyCountResponse(
-            List<ReplyCountDto> replyCountList
-    ) {}
 }
