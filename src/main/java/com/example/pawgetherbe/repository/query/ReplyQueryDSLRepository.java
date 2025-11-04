@@ -3,6 +3,7 @@ package com.example.pawgetherbe.repository.query;
 import com.example.pawgetherbe.controller.query.dto.ReplyQueryDto.ReplyReadResponse;
 import com.example.pawgetherbe.domain.entity.QLikeEntity;
 import com.example.pawgetherbe.domain.entity.QReplyEntity;
+import com.example.pawgetherbe.domain.entity.ReplyEntity;
 import com.example.pawgetherbe.domain.status.ReplyStatus;
 import com.example.pawgetherbe.mapper.query.ReplyQueryMapper;
 import com.querydsl.core.Tuple;
@@ -24,13 +25,9 @@ public class ReplyQueryDSLRepository {
 
     @Transactional(readOnly = true)
     public ReplyReadResponse readReplies(Long id, long cursor) {
-        List<Tuple> replies = jpaQueryFactory
-                .select(reply,likeEntity.id.count())
+        List<ReplyEntity> replies = jpaQueryFactory
+                .select(reply)
                 .from(reply)
-                .leftJoin(likeEntity).on(
-                        reply.id.eq(likeEntity.targetId),
-                        likeEntity.targetType.eq("reply")
-                )
                 .where(
                         reply.status.eq(ReplyStatus.ACTIVE),
                         reply.comment.id.eq(id),
@@ -42,10 +39,7 @@ public class ReplyQueryDSLRepository {
                 .fetch();
 
         var replyList = replies.stream()
-                .map(t -> replyQueryMapper.toReplyReadDto(
-                        t.get(reply),
-                        t.get(likeEntity.id.count()).intValue()
-                ))
+                .map(replyQueryMapper::toReplyReadDto)
                 .toList();
 
         boolean hasMore = replyList.size() == 11;
