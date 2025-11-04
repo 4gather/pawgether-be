@@ -16,7 +16,8 @@ public final class CommentQueryDto {
             String nickName,
             String content,
             String createdAt,
-            String updatedAt
+            String updatedAt,
+            int heart
     ) {}
 
     public record MainCommentResponse(
@@ -29,7 +30,8 @@ public final class CommentQueryDto {
             String nickName,
             String content,
             String createdAt,
-            String updatedAt
+            String updatedAt,
+            int heart
     ) {}
 
     public record CommentCountDto(
