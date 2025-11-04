@@ -16,8 +16,7 @@ public final class ReplyQueryDto {
             String nickName,
             String content,
             String createdAt,
-            String updatedAt,
-            int heart
+            String updatedAt
     ) {}
 
     public record ReplyCountDto(
