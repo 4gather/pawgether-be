@@ -18,7 +18,8 @@ public final class ReplyCommandDto {
             long userId,
             String content,
             String createdAt,
-            String updatedAt
+            String updatedAt,
+            int heart
     ) {}
 
     public record ReplyUpdateRequest(
@@ -38,6 +39,7 @@ public final class ReplyCommandDto {
             long userId,
             String content,
             String createdAt,
-            String updatedAt
+            String updatedAt,
+            int heart
     ) {}
 }

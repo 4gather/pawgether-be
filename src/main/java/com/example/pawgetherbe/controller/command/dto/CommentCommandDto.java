@@ -14,7 +14,8 @@ public final class CommentCommandDto {
             long petFairId,
             String content,
             String createdAt,
-            String updatedAt
+            String updatedAt,
+            int heart
     ) {}
 
     public record CommentUpdateRequest(
@@ -28,6 +29,7 @@ public final class CommentCommandDto {
             long petFairId,
             String content,
             String createdAt,
-            String updatedAt
+            String updatedAt,
+            int heart
     ) {}
 }

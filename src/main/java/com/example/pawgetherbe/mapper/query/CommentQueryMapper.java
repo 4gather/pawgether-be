@@ -14,11 +14,13 @@ public interface CommentQueryMapper {
     @Mapping(target = "commentId", source = "comment.id")
     @Mapping(target = "nickName", source = "comment.user.nickName")
     @Mapping(target = "petFairId", source = "comment.petFair.id")
-    ReadCommentDto toReadCommentDto(CommentEntity comment);
+    @Mapping(target = "heart", source = "count")
+    ReadCommentDto toReadCommentDto(CommentEntity comment, int count);
     ReadCommentResponse toReadCommentResponse(List<ReadCommentDto> comments, boolean hasMore, long nextCursor);
 
     @Mapping(target = "commentId", source = "comment.id")
     @Mapping(target = "nickName", source = "comment.user.nickName")
     @Mapping(target = "petFairId", source = "comment.petFair.id")
-    MainCommentDto toMainCommentResponse(CommentEntity comment);
+    @Mapping(target = "heart", source = "count")
+    MainCommentDto toMainCommentResponse(CommentEntity comment, int count);
 }
