@@ -11,11 +11,10 @@ import java.util.List;
 @Mapper
 public interface ReplyQueryMapper {
 
-    @Mapping(target = "heart", source = "count")
     @Mapping(target = "replyId", source = "replyEntity.id")
     @Mapping(target = "nickName", source = "replyEntity.user.nickName")
     @Mapping(target = "commentId", source = "replyEntity.comment.id")
-    ReplyReadDto toReplyReadDto(ReplyEntity replyEntity, int count);
+    ReplyReadDto toReplyReadDto(ReplyEntity replyEntity);
 
     ReplyReadResponse toReplyReadResponse(List<ReplyReadDto> replies, boolean hasMore, long nextCursor);
 }
