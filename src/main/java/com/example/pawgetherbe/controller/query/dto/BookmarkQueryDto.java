@@ -3,7 +3,7 @@ package com.example.pawgetherbe.controller.query.dto;
 import java.time.LocalDate;
 import java.util.List;
 
-public final class BookmarkDto {
+public final class BookmarkQueryDto {
     public record SummaryBookmarksResponse(
             boolean hasMore,
             Long nextCursor,

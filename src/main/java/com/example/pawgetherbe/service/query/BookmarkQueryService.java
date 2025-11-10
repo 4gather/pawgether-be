@@ -1,9 +1,9 @@
 package com.example.pawgetherbe.service.query;
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
-import com.example.pawgetherbe.controller.query.dto.BookmarkDto.DetailBookmarkedPetFairResponse;
-import com.example.pawgetherbe.controller.query.dto.BookmarkDto.SummaryBookmarksResponse;
-import com.example.pawgetherbe.controller.query.dto.BookmarkDto.TargetResponse;
+import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.DetailBookmarkedPetFairResponse;
+import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.SummaryBookmarksResponse;
+import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.TargetResponse;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse;
 import com.example.pawgetherbe.domain.entity.BookmarkEntity;
 import com.example.pawgetherbe.domain.entity.PetFairEntity;

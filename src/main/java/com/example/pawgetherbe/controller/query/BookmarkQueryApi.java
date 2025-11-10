@@ -1,7 +1,7 @@
 package com.example.pawgetherbe.controller.query;
 
-import com.example.pawgetherbe.controller.query.dto.BookmarkDto.SummaryBookmarksResponse;
-import com.example.pawgetherbe.controller.query.dto.BookmarkDto.TargetResponse;
+import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.SummaryBookmarksResponse;
+import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.TargetResponse;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse;
 import com.example.pawgetherbe.usecase.bookmark.IsBookmarkedUseCase;
 import com.example.pawgetherbe.usecase.bookmark.ReadBookmarkByIdUseCase;

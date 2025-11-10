@@ -1,6 +1,6 @@
 package com.example.pawgetherbe.usecase.bookmark;
 
-import com.example.pawgetherbe.controller.query.dto.BookmarkDto.TargetResponse;
+import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.TargetResponse;
 
 import java.util.Set;
 
