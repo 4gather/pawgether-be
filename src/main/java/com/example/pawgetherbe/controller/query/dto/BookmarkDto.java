@@ -20,4 +20,9 @@ public final class BookmarkDto {
             String simpleAddress,
             boolean isBookmark
     ) {}
+
+    public record TargetResponse(
+            long targetId,
+            boolean isBookmarked
+    ) {}
 }
