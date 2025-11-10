@@ -31,7 +31,7 @@ public class BookmarkQueryApi {
     }
 
     @GetMapping("/exists")
-    public Set<TargetResponse> isBookmarked(@RequestBody Set<Long> targetIds) {
+    public Set<TargetResponse> isBookmarked(@RequestParam Set<Long> targetIds) {
         return isBookmarkedUseCase.isBookmarked(targetIds);
     }
 }
