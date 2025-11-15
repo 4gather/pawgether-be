@@ -5,6 +5,7 @@ import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.ConditionRequest;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.Cursor;
 import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.PetFairPosterDto;
+import com.example.pawgetherbe.domain.UserContext;
 import com.example.pawgetherbe.domain.entity.PetFairEntity;
 import com.example.pawgetherbe.domain.entity.QPetFairEntity;
 import com.example.pawgetherbe.domain.status.PetFairFilterStatus;
@@ -18,8 +19,10 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.EMPTY_PET_FAIR_FILTER_STATUS;
 
@@ -146,6 +149,38 @@ public class PetFairQueryDSLRepository {
                 .orderBy(petFair.startDate.desc(), petFair.id.desc())
                 .limit(11)
                 .fetch();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsActiveByPetFairId(Long petFairId) {
+        return jpaQueryFactory
+                .selectOne()
+                .from(petFair)
+                .where(
+                        petFair.user.id.eq(1L),
+//                         실제 Service에서 주석 코드 사용
+//                        petFair.user.id.eq(Long.parseLong(UserContext.getUserId())),
+                        petFair.id.eq(petFairId),
+                        petFair.status.eq(PetFairStatus.ACTIVE)
+                )
+                .fetchFirst() != null;
+    }
+
+    @Transactional(readOnly = true)
+    public Set<Long> existsActiveByPetFairIdList(Set<Long> petFairIdList) {
+        return new HashSet<>(
+                jpaQueryFactory
+                .select(petFair.id)
+                .from(petFair)
+                .where(
+                        petFair.user.id.eq(1L),
+//                         실제 Service에서 주석 코드 사용
+//                        petFair.user.id.eq(Long.parseLong(UserContext.getUserId())),
+                        petFair.id.in(petFairIdList),
+                        petFair.status.eq(PetFairStatus.ACTIVE)
+                )
+                .fetch()
+        );
     }
 
     // PetFairFilterStatus 에 따른 Where 절

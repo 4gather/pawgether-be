@@ -3,12 +3,14 @@ package com.example.pawgetherbe.service.command;
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
 import com.example.pawgetherbe.controller.command.dto.LikeCommandDto.LikeRequest;
 import com.example.pawgetherbe.controller.command.dto.LikeCommandDto.LikeResponse;
+import com.example.pawgetherbe.controller.query.dto.LikeQueryDto.TargetRequest;
 import com.example.pawgetherbe.domain.entity.LikeEntity;
 import com.example.pawgetherbe.domain.entity.UserEntity;
 import com.example.pawgetherbe.mapper.command.LikeCommandMapper;
 import com.example.pawgetherbe.repository.command.LikeCommandRepository;
 import com.example.pawgetherbe.repository.query.LikeQueryDSLRepository;
 import com.example.pawgetherbe.repository.query.UserQueryRepository;
+import com.example.pawgetherbe.service.checker.LikeTargetRegistry;
 import com.example.pawgetherbe.usecase.like.CancelLikeUseCase;
 import com.example.pawgetherbe.usecase.like.LikeUseCase;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,8 @@ public class LikeCommandService implements LikeUseCase, CancelLikeUseCase {
 
     private final LikeCommandMapper likeCommandMapper;
 
+    private final LikeTargetRegistry likeTargetRegistry;
+
     @Transactional
     @Override
     public LikeResponse addLike(LikeRequest likeRequest) {
@@ -39,15 +43,14 @@ public class LikeCommandService implements LikeUseCase, CancelLikeUseCase {
                 () -> new CustomException(NOT_FOUND_USER)
         );
 
-        // TODO: 좋아요 Target 존재 유무 Repository 작성
-//        boolean existsTarget = likeQueryDSLRepository.existsTarget(likeRequest);
-//
-//        if (!existsTarget) {
-//            throw new CustomException(NOT_FOUND_TARGET);
-//        }
+        // 해당 Target 존재 유무
+        if (!likeTargetRegistry.existsByOneTarget(likeRequest.targetType(), likeRequest.targetId())) {
+            throw new CustomException(NOT_FOUND_TARGET);
+        }
 
         // 존재하는 Target이 Like Table에 존재 유무
-        boolean existsLikeByUserAndTarget = likeQueryDSLRepository.hasUserLikedTarget(likeRequest);
+        boolean existsLikeByUserAndTarget = likeQueryDSLRepository.hasUserLikedTarget(
+                new TargetRequest(likeRequest.targetType(), likeRequest.targetId()));
 
         if (existsLikeByUserAndTarget) {
             throw new CustomException(ALREADY_FOUND_LIKE);
@@ -60,9 +63,10 @@ public class LikeCommandService implements LikeUseCase, CancelLikeUseCase {
             LikeEntity savedLikeEntity = likeCommandRepository.save(likeEntity);
             existsLikeByUserAndTarget = true;
 
-            long likeCount = likeQueryDSLRepository.countLikeByTarget(likeRequest);
+            long likeCount = likeQueryDSLRepository.countLikeByTarget(
+                    new TargetRequest(likeRequest.targetType(), likeRequest.targetId()));
 
-            return new LikeResponse(existsLikeByUserAndTarget, savedLikeEntity.getCreatedAt(), likeCount);
+            return new LikeResponse(likeRequest.targetType(), likeRequest.targetId(), existsLikeByUserAndTarget);
         } catch (Exception e) {
             throw new CustomException(FAIL_LIKE);
         }
@@ -86,7 +90,7 @@ public class LikeCommandService implements LikeUseCase, CancelLikeUseCase {
 
         try {
             likeCommandRepository.deleteById(likeEntity.getId());
-            return new LikeResponse(false, null, null);
+            return new LikeResponse(likeRequest.targetType(),likeRequest.targetId(),false);
         } catch (Exception e) {
             throw new CustomException(FAIL_CANCEL_LIKE);
         }
