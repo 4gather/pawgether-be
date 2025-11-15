@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-10-12T23:33:27+0900",
+    date = "2025-11-15T23:23:16+0900",
     comments = "version: 1.6.3, compiler: javac, environment: Java 21.0.8 (Amazon.com Inc.)"
 )
 @Component
@@ -60,9 +60,7 @@ public class CommentCommandMapperImpl implements CommentCommandMapper {
             updatedAt = commentEntity.getUpdatedAt().toString();
         }
 
-        int heart = 0;
-
-        CommentCommandDto.CommentCreateResponse commentCreateResponse = new CommentCommandDto.CommentCreateResponse( commentId, userId, petFairId, content, createdAt, updatedAt, heart );
+        CommentCommandDto.CommentCreateResponse commentCreateResponse = new CommentCommandDto.CommentCreateResponse( commentId, userId, petFairId, content, createdAt, updatedAt );
 
         return commentCreateResponse;
     }
@@ -99,9 +97,7 @@ public class CommentCommandMapperImpl implements CommentCommandMapper {
             updatedAt = commentEntity.getUpdatedAt().toString();
         }
 
-        int heart = 0;
-
-        CommentCommandDto.CommentUpdateResponse commentUpdateResponse = new CommentCommandDto.CommentUpdateResponse( commentId, userId, petFairId, content, createdAt, updatedAt, heart );
+        CommentCommandDto.CommentUpdateResponse commentUpdateResponse = new CommentCommandDto.CommentUpdateResponse( commentId, userId, petFairId, content, createdAt, updatedAt );
 
         return commentUpdateResponse;
     }

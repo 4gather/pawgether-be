@@ -11,14 +11,14 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-10-12T23:33:27+0900",
+    date = "2025-11-15T23:23:16+0900",
     comments = "version: 1.6.3, compiler: javac, environment: Java 21.0.8 (Amazon.com Inc.)"
 )
 @Component
 public class ReplyQueryMapperImpl implements ReplyQueryMapper {
 
     @Override
-    public ReplyQueryDto.ReplyReadDto toReplyReadDto(ReplyEntity replyEntity, int count) {
+    public ReplyQueryDto.ReplyReadDto toReplyReadDto(ReplyEntity replyEntity) {
         if ( replyEntity == null ) {
             return null;
         }
@@ -29,27 +29,24 @@ public class ReplyQueryMapperImpl implements ReplyQueryMapper {
         String content = null;
         String createdAt = null;
         String updatedAt = null;
-        if ( replyEntity != null ) {
-            if ( replyEntity.getId() != null ) {
-                replyId = replyEntity.getId();
-            }
-            nickName = replyEntityUserNickName( replyEntity );
-            Long id = replyEntityCommentId( replyEntity );
-            if ( id != null ) {
-                commentId = id;
-            }
-            content = replyEntity.getContent();
-            if ( replyEntity.getCreatedAt() != null ) {
-                createdAt = replyEntity.getCreatedAt().toString();
-            }
-            if ( replyEntity.getUpdatedAt() != null ) {
-                updatedAt = replyEntity.getUpdatedAt().toString();
-            }
-        }
-        int heart = 0;
-        heart = count;
 
-        ReplyQueryDto.ReplyReadDto replyReadDto = new ReplyQueryDto.ReplyReadDto( replyId, commentId, nickName, content, createdAt, updatedAt, heart );
+        if ( replyEntity.getId() != null ) {
+            replyId = replyEntity.getId();
+        }
+        nickName = replyEntityUserNickName( replyEntity );
+        Long id = replyEntityCommentId( replyEntity );
+        if ( id != null ) {
+            commentId = id;
+        }
+        content = replyEntity.getContent();
+        if ( replyEntity.getCreatedAt() != null ) {
+            createdAt = replyEntity.getCreatedAt().toString();
+        }
+        if ( replyEntity.getUpdatedAt() != null ) {
+            updatedAt = replyEntity.getUpdatedAt().toString();
+        }
+
+        ReplyQueryDto.ReplyReadDto replyReadDto = new ReplyQueryDto.ReplyReadDto( replyId, commentId, nickName, content, createdAt, updatedAt );
 
         return replyReadDto;
     }

@@ -11,14 +11,14 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-10-12T23:33:27+0900",
+    date = "2025-11-15T23:23:16+0900",
     comments = "version: 1.6.3, compiler: javac, environment: Java 21.0.8 (Amazon.com Inc.)"
 )
 @Component
 public class CommentQueryMapperImpl implements CommentQueryMapper {
 
     @Override
-    public CommentQueryDto.ReadCommentDto toReadCommentDto(CommentEntity comment, int count) {
+    public CommentQueryDto.ReadCommentDto toReadCommentDto(CommentEntity comment) {
         if ( comment == null ) {
             return null;
         }
@@ -29,27 +29,24 @@ public class CommentQueryMapperImpl implements CommentQueryMapper {
         String content = null;
         String createdAt = null;
         String updatedAt = null;
-        if ( comment != null ) {
-            if ( comment.getId() != null ) {
-                commentId = comment.getId();
-            }
-            nickName = commentUserNickName( comment );
-            Long id = commentPetFairId( comment );
-            if ( id != null ) {
-                petFairId = id;
-            }
-            content = comment.getContent();
-            if ( comment.getCreatedAt() != null ) {
-                createdAt = comment.getCreatedAt().toString();
-            }
-            if ( comment.getUpdatedAt() != null ) {
-                updatedAt = comment.getUpdatedAt().toString();
-            }
-        }
-        int heart = 0;
-        heart = count;
 
-        CommentQueryDto.ReadCommentDto readCommentDto = new CommentQueryDto.ReadCommentDto( commentId, petFairId, nickName, content, createdAt, updatedAt, heart );
+        if ( comment.getId() != null ) {
+            commentId = comment.getId();
+        }
+        nickName = commentUserNickName( comment );
+        Long id = commentPetFairId( comment );
+        if ( id != null ) {
+            petFairId = id;
+        }
+        content = comment.getContent();
+        if ( comment.getCreatedAt() != null ) {
+            createdAt = comment.getCreatedAt().toString();
+        }
+        if ( comment.getUpdatedAt() != null ) {
+            updatedAt = comment.getUpdatedAt().toString();
+        }
+
+        CommentQueryDto.ReadCommentDto readCommentDto = new CommentQueryDto.ReadCommentDto( commentId, petFairId, nickName, content, createdAt, updatedAt );
 
         return readCommentDto;
     }
@@ -73,6 +70,40 @@ public class CommentQueryMapperImpl implements CommentQueryMapper {
         CommentQueryDto.ReadCommentResponse readCommentResponse = new CommentQueryDto.ReadCommentResponse( hasMore1, nextCursor1, comments1 );
 
         return readCommentResponse;
+    }
+
+    @Override
+    public CommentQueryDto.MainCommentDto toMainCommentResponse(CommentEntity comment) {
+        if ( comment == null ) {
+            return null;
+        }
+
+        long commentId = 0L;
+        String nickName = null;
+        long petFairId = 0L;
+        String content = null;
+        String createdAt = null;
+        String updatedAt = null;
+
+        if ( comment.getId() != null ) {
+            commentId = comment.getId();
+        }
+        nickName = commentUserNickName( comment );
+        Long id = commentPetFairId( comment );
+        if ( id != null ) {
+            petFairId = id;
+        }
+        content = comment.getContent();
+        if ( comment.getCreatedAt() != null ) {
+            createdAt = comment.getCreatedAt().toString();
+        }
+        if ( comment.getUpdatedAt() != null ) {
+            updatedAt = comment.getUpdatedAt().toString();
+        }
+
+        CommentQueryDto.MainCommentDto mainCommentDto = new CommentQueryDto.MainCommentDto( commentId, petFairId, nickName, content, createdAt, updatedAt );
+
+        return mainCommentDto;
     }
 
     private String commentUserNickName(CommentEntity commentEntity) {
