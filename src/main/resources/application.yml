@@ -5,15 +5,12 @@ spring:
   profiles:
     active: local
 
-  server:
-    address: 0.0.0.0
-    port: 8080
+
 
   datasource:
     url: jdbc:postgresql://localhost:5433/demo
     username: root
     password: root
-    driver-class-name: org.postgresql.Driver
 
   data:
     redis:
@@ -29,6 +26,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         hbm2ddl:
           auto: create
-
+server:
+  address: 0.0.0.0
+  port: 8080
 jwt:
   secret-key: s4KJ29A0fslDkj3RnlqpsueuFFaw8fG3D2lgq9XsQak=

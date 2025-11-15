@@ -19,6 +19,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -54,9 +55,10 @@ public class PetFairQueryDSLRepository {
 
     @Transactional(readOnly = true)
     public List<PetFairQueryDto.PetFairCalendarDto> petFairCalendar(String date) {
-        var CalendarDate = LocalDate.parse(date);
-        LocalDate startDate = CalendarDate.minusMonths(6);
-        LocalDate endDate   = CalendarDate.plusMonths(6);
+        YearMonth yearMonth = resolveYearMonth(date);
+
+        LocalDate startDate = yearMonth.minusMonths(6).atDay(1);
+        LocalDate endDate   = yearMonth.plusMonths(6).atEndOfMonth();
 
         return jpaQueryFactory
                 .select(Projections.constructor(
@@ -238,5 +240,12 @@ public class PetFairQueryDSLRepository {
         BooleanExpression tieBreaker = petFair.startDate.lt(cursor.startDate());
 
         return main.or(tieBreaker);
+    }
+
+    private YearMonth resolveYearMonth(String date) {
+        if (date == null || date.isBlank()) {
+            return YearMonth.now();
+        }
+        return YearMonth.parse(date);
     }
 }

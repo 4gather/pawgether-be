@@ -16,7 +16,29 @@ public final class CommentQueryDto {
             String nickName,
             String content,
             String createdAt,
-            String updatedAt,
-            int heart
+            String updatedAt
+    ) {}
+
+    public record MainCommentResponse(
+            List<MainCommentDto> comments
+    ) {}
+
+    public record MainCommentDto(
+            long commentId,
+            long petFairId,
+            String nickName,
+            String content,
+            String createdAt,
+            String updatedAt
+    ) {}
+
+    public record CommentCountDto(
+            String targetType,
+            long targetId,
+            long count
+    ) {}
+
+    public record CommentCountResponse(
+            CommentCountDto CommentCount
     ) {}
 }

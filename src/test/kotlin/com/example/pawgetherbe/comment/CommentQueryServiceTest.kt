@@ -2,7 +2,10 @@ package com.example.pawgetherbe.comment
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException
 import com.example.pawgetherbe.controller.query.dto.CommentQueryDto
+import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.MainCommentDto
+import com.example.pawgetherbe.controller.query.dto.CommentQueryDto.MainCommentResponse
 import com.example.pawgetherbe.domain.UserContext
+import com.example.pawgetherbe.exception.query.CommentQueryErrorCode
 import com.example.pawgetherbe.exception.query.PetFairQueryErrorCode
 import com.example.pawgetherbe.repository.query.CommentQueryDSLRepository
 import com.example.pawgetherbe.repository.query.PetFairQueryRepository
@@ -63,6 +66,32 @@ class CommentQueryServiceTest: FreeSpec({
                 // then
                 exception.errorCode shouldBe PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_CALENDAR
             }
+        }
+    }
+
+    "메인 페이지 댓글 조회" - {
+        "메인 페이지 댓글 조회 성공" {
+            val mainCommentDto = listOf(
+                MainCommentDto(1L, 1L, "abc", "test", "", "", 0),
+                MainCommentDto(2L, 1L, "abc", "test", "", "", 0),
+                MainCommentDto(3L, 1L, "abc", "test", "", "", 0)
+            )
+            val mainCommentResponse = MainCommentResponse(mainCommentDto)
+
+            every { commentQueryDSLRepository.mainComments() } returns mainCommentResponse
+
+            var result = commentQueryService.mainComments()
+
+            result shouldBe mainCommentResponse
+            verify(exactly = 1) { commentQueryDSLRepository.mainComments() }
+        }
+
+        "메인 페이지 댓글 조회 실패" {
+            every { commentQueryDSLRepository.mainComments() } returns null
+
+            val exception = shouldThrow<CustomException> {commentQueryService.mainComments()}
+
+            exception.errorCode shouldBe CommentQueryErrorCode.NOT_FOUND_COMMENT_CALENDAR
         }
     }
 
