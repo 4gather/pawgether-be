@@ -54,10 +54,7 @@ public class PetFairQueryDSLRepository {
     public List<PetFairQueryDto.PetFairCalendarDto> petFairCalendar(String date) {
         YearMonth yearMonth = resolveYearMonth(date);
 
-        // 기준 달의 첫날
-        LocalDate monthFirstDay = yearMonth.atDay(1);
-
-        LocalDate startDate = monthFirstDay.minusMonths(6).withDayOfMonth(1);
+        LocalDate startDate = yearMonth.minusMonths(6).atDay(1);
         LocalDate endDate   = yearMonth.plusMonths(6).atEndOfMonth();
 
         return jpaQueryFactory
