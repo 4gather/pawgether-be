@@ -2,6 +2,7 @@ package com.example.pawgetherbe.repository.query;
 
 import com.example.pawgetherbe.controller.query.dto.ReplyQueryDto;
 import com.example.pawgetherbe.controller.query.dto.ReplyQueryDto.ReplyReadResponse;
+import com.example.pawgetherbe.domain.UserContext;
 import com.example.pawgetherbe.domain.entity.QLikeEntity;
 import com.example.pawgetherbe.domain.entity.QReplyEntity;
 import com.example.pawgetherbe.domain.entity.ReplyEntity;
@@ -15,7 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNullElse;
@@ -79,6 +82,36 @@ public class ReplyQueryDSLRepository {
 
 
         return new ReplyQueryDto.ReplyCountResponse(dtos);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsByReplyId(Long replyId) {
+        return jpaQueryFactory
+                .selectOne()
+                .from(reply)
+                .where(
+                        reply.user.id.eq(1L),
+//                        실제 Service에서 주석 코드 사용
+//                        reply.user.id.eq(Long.parseLong(UserContext.getUserId()));
+                        reply.id.eq(replyId)
+                )
+                .fetchFirst() != null;
+    }
+
+    @Transactional(readOnly =true)
+    public Set<Long> existsByReplyIdList(Set<Long> replyIdList) {
+        return new HashSet<>(
+                jpaQueryFactory
+                        .select(reply.id)
+                        .from(reply)
+                        .where(
+                                reply.user.id.eq(1L),
+//                                실제 Service에서 주석 코드 사용
+//                                reply.user.id.eq(Long.parseLong(UserContext.getUserId()));
+                                reply.id.in(replyIdList)
+                        )
+                        .fetch()
+        );
     }
 
     private BooleanExpression cursorCondition(long cursor) {

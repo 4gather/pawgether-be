@@ -15,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Repository
 @RequiredArgsConstructor
@@ -86,6 +88,38 @@ public class CommentQueryDSLRepository {
 
         return new CommentCountResponse(commentCountDto);
     }
+
+
+    @Transactional(readOnly = true)
+    public boolean existsByCommentId(Long commentId) {
+        return jpaQueryFactory
+                .selectOne()
+                .from(commentEntity)
+                .where(
+                        commentEntity.user.id.eq(1L),
+//                        실제 Service에서 주석 코드 사용
+//                        reply.user.id.eq(Long.parseLong(UserContext.getUserId()));
+                        commentEntity.id.eq(commentId)
+                )
+                .fetchFirst() != null;
+    }
+
+    @Transactional(readOnly =true)
+    public Set<Long> existsByCommentIdList(Set<Long> commentIdList) {
+        return new HashSet<>(
+                jpaQueryFactory
+                        .select(commentEntity.id)
+                        .from(commentEntity)
+                        .where(
+                                commentEntity.user.id.eq(1L),
+//                                실제 Service에서 주석 코드 사용
+//                                reply.user.id.eq(Long.parseLong(UserContext.getUserId()));
+                                commentEntity.id.in(commentIdList)
+                        )
+                        .fetch()
+        );
+    }
+
 
     private BooleanExpression cursorCondition(long cursor) {
         if (cursor > 0) {

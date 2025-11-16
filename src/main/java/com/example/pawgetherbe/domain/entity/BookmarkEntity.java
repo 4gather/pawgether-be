@@ -34,4 +34,22 @@ public class BookmarkEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patFairId", nullable = false)
     private PetFairEntity petFair;
+
+    public void addUser(UserEntity userEntity) {
+        this.user = userEntity;
+        userEntity.getBookmarkEntities().add(this);
+    }
+
+    public void addPetFair(PetFairEntity petFairEntity) {
+        this.petFair = petFairEntity;
+        petFairEntity.getBookmarkEntities().add(this);
+    }
+
+    public void removeUser(UserEntity userEntity) {
+        userEntity.getBookmarkEntities().remove(this);
+    }
+
+    public void removePetFair(PetFairEntity petFairEntity) {
+        petFairEntity.getBookmarkEntities().remove(this);
+    }
 }
