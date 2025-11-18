@@ -66,7 +66,7 @@ public final class UserCommandDto {
             String accessToken,
             String provider,
             String email,
-            String nickname,
+            String nickName,
             String userImg
     ) {}
 

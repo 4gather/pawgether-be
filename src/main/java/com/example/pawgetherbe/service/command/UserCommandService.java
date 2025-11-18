@@ -316,11 +316,11 @@ public class UserCommandService implements SignUpCommandOauthUseCase, SignUpComm
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(response.getBody());
-
+            log.info("response = {}", root.toString());
             return switch (provider) {
                 case "google" -> Map.of(
                         "email", root.path("email").asText(),
-                        "nickname", root.path("nickname").asText(),
+                        "nickname", root.path("name").asText(),
                         "providerId", root.path("sub").asText()
                 );
                 case "naver" -> {

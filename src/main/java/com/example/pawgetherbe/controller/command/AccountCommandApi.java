@@ -3,7 +3,6 @@ package com.example.pawgetherbe.controller.command;
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
 import com.example.pawgetherbe.config.OauthConfig;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.PasswordEditRequest;
-import com.example.pawgetherbe.controller.command.dto.UserCommandDto.OAuth2ResponseBody;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.SignInUserRequest;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.SignInUserResponse;
 import com.example.pawgetherbe.controller.command.dto.UserCommandDto.SignInUserWithRefreshTokenResponse;
@@ -113,16 +112,36 @@ public class AccountCommandApi {
     }
 
     @GetMapping("/oauth/callback/{provider}")
-    public ResponseEntity<OAuth2ResponseBody> oauthCallback(
+    public ResponseEntity<String> oauthCallback(
             @PathVariable String provider,
-            @RequestParam String code) {
+            @RequestParam String code) throws Exception {
         var oauth2SignUpResponse = signUpCommandOauthUseCase.oauthSignUp(provider,code);
 
         ResponseCookie cookie = buildRefreshTokenCookieHeader(oauth2SignUpResponse.refreshToken());
+        var body = userCommandMapper.toOAuth2ResponseBody(oauth2SignUpResponse);
+        String json = new com.fasterxml.jackson.databind.ObjectMapper()
+                .writeValueAsString(body)
+                .replace("</", "<\\/");
 
+        String targetOrigin = "https://your-frontend-domain.com";
+        String html = """
+          <!doctype html><meta charset="utf-8"><title>OAuth Callback</title>
+          <script>
+            (function () {
+              var data = %s;
+              if (window.opener && !window.opener.closed) {
+                window.opener.postMessage({ type: 'OAUTH_DONE', data: data }, '%s');
+              }
+              window.close();
+            })();
+          </script>
+        """.formatted(json, targetOrigin);
+
+        log.error(html);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(userCommandMapper.toOAuth2ResponseBody(oauth2SignUpResponse));
+                .header(HttpHeaders.CONTENT_TYPE, "text/html; charset=UTF-8")
+                .body(html);
     }
 
     @PostMapping
