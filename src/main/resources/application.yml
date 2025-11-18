@@ -25,9 +25,21 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
         hbm2ddl:
-          auto: create
+          auto: update
+
+  servlet:
+    multipart:
+      max-file-size: 50MB        # 파일 하나 최대
+      max-request-size: 200MB    # 요청 전체 최대
+      resolve-lazily: true       # 예외를 컨트롤러에서 잡기 좋게
+
 server:
   address: 0.0.0.0
   port: 8080
+  tomcat:
+    max-http-form-post-size: 200MB
+    max-swallow-size: -1
+    max-part-count: 50
+
 jwt:
   secret-key: s4KJ29A0fslDkj3RnlqpsueuFFaw8fG3D2lgq9XsQak=
