@@ -75,13 +75,13 @@ public class AccountCommandApi {
 
     @GetMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void logout(@CookieValue(value = "refresh_token") String refreshToken) {
+    public void logout(@CookieValue(value = "refreshToken") String refreshToken) {
         signOutCommandUseCase.signOut(refreshToken);
     }
 
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteAccount(@CookieValue(value = "refresh_token") String refreshToken) {
+    public void deleteAccount(@CookieValue(value = "refreshToken") String refreshToken) {
         deleteUserCommandUseCase.deleteAccount(refreshToken);
     }
 
