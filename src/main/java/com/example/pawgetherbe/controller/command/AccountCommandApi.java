@@ -65,7 +65,7 @@ public class AccountCommandApi {
     private final UserCommandMapper userCommandMapper;
     private final OauthConfig oauthConfig;
 
-    private static final String SAME_SITE_STRICT = "Strict";
+    private static final String SAME_SITE_LAX = "Lax";
 
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
@@ -123,7 +123,7 @@ public class AccountCommandApi {
                 .writeValueAsString(body)
                 .replace("</", "<\\/");
 
-        String targetOrigin = "https://your-frontend-domain.com";
+        String targetOrigin = "http://localhost:3000";
         String html = """
           <!doctype html><meta charset="utf-8"><title>OAuth Callback</title>
           <script>
@@ -171,10 +171,11 @@ public class AccountCommandApi {
     private ResponseCookie buildRefreshTokenCookieHeader(String refreshToken) {
         return ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)   // react는 일반적으로 http://localhost:3000으로 서버 띄움(http)
                 .path("/")
                 .maxAge(REFRESH_TOKEN_VALIDITY_SECONDS)
-                .sameSite(SAME_SITE_STRICT)
+                .sameSite("None") // Lax는 POST 요청 시 쿠키 전송 X, 일단은 None으로 처리
+//                .domain()  // 프론트 서버 배포 시 도메인 입력 필요(localhost 환경은 필요 X)
                 .build();
     }
 
