@@ -1,6 +1,7 @@
 package com.example.pawgetherbe.common.filter;
 
 import com.example.pawgetherbe.common.exceptionHandler.dto.ErrorResponseDto;
+import com.example.pawgetherbe.common.filter.dto.ExcludeRule;
 import com.example.pawgetherbe.domain.UserContext;
 import com.example.pawgetherbe.domain.status.AccessTokenStatus;
 import com.example.pawgetherbe.util.JwtUtil;
@@ -14,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.AntPathMatcher;
 
@@ -32,10 +34,35 @@ public class JwtAuthFilter implements Filter {
     private final JwtUtil jwtUtil;
 
     private final AntPathMatcher ant = new AntPathMatcher();
-    private static final List<String> EXCLUDES = List.of(
-           "/api/v1/account/signup", "/api/v1/account"
+    private static final List<ExcludeRule> EXCLUDES = List.of(
+
+            new ExcludeRule(HttpMethod.GET,  "/api/v1/main/*"),
+            new ExcludeRule(HttpMethod.GET,  "/api/v1/calendar"),
+            new ExcludeRule(HttpMethod.POST, "/api/v1/refresh"),
+
+            new ExcludeRule(HttpMethod.GET,  "/api/v1/petfairs"),
+            new ExcludeRule(HttpMethod.GET,  "/api/v1/petfairs/*"),
+
+            new ExcludeRule(HttpMethod.POST, "/api/v1/account"),
+            new ExcludeRule(HttpMethod.POST, "/api/v1/account/signup"),
+            new ExcludeRule(HttpMethod.POST, "/api/v1/account/signup/*"),
+            new ExcludeRule(HttpMethod.GET,  "/api/v1/account/oauth/naver"),
+            new ExcludeRule(HttpMethod.GET,  "/api/v1/account/oauth/google"),
+
+            new ExcludeRule(HttpMethod.GET,  "/api/v1/comments/*"),
+            new ExcludeRule(HttpMethod.GET,  "/api/v1/comments/count/*"),
+
+            new ExcludeRule(HttpMethod.GET,  "/api/v1/replies/*"),
+            new ExcludeRule(HttpMethod.POST, "/api/v1/replies/count")
     );
 
+    private boolean isExcluded(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        String method = request.getMethod();
+        return EXCLUDES.stream().anyMatch(rule ->
+                rule.method().matches(method) && ant.match(rule.pattern(), uri)
+        );
+    }
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
@@ -43,9 +70,9 @@ public class JwtAuthFilter implements Filter {
             HttpServletRequest request = (HttpServletRequest) servletRequest;
             HttpServletResponse response = (HttpServletResponse) servletResponse;
             String uri = request.getRequestURI();
-
-            if (EXCLUDES.stream().anyMatch(p -> ant.match(p, uri))) {
-                filterChain.doFilter(servletRequest, servletResponse);
+            log.info("uri = {}",uri);
+            if (isExcluded(request)) {
+                filterChain.doFilter(request, response);
                 return;
             }
 
