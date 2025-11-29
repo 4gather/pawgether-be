@@ -4,15 +4,10 @@ import com.example.pawgetherbe.common.exceptionHandler.CustomException;
 import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.DetailBookmarkedPetFairResponse;
 import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.SummaryBookmarksResponse;
 import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.TargetResponse;
-import com.example.pawgetherbe.controller.query.dto.PetFairQueryDto.DetailPetFairResponse;
 import com.example.pawgetherbe.domain.entity.BookmarkEntity;
-import com.example.pawgetherbe.domain.entity.PetFairEntity;
 import com.example.pawgetherbe.mapper.query.BookmarkQueryMapper;
-import com.example.pawgetherbe.mapper.query.PetFairQueryMapper;
 import com.example.pawgetherbe.repository.query.BookmarkQueryDSLRepository;
-import com.example.pawgetherbe.repository.query.PetFairQueryDSLRepository;
 import com.example.pawgetherbe.usecase.bookmark.IsBookmarkedUseCase;
-import com.example.pawgetherbe.usecase.bookmark.ReadBookmarkByIdUseCase;
 import com.example.pawgetherbe.usecase.bookmark.ReadBookmarksUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,16 +18,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.example.pawgetherbe.exception.query.BookmarkQueryErrorCode.*;
-import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_POSTER;
 
 @Service
 @RequiredArgsConstructor
-public class BookmarkQueryService implements ReadBookmarksUseCase, ReadBookmarkByIdUseCase, IsBookmarkedUseCase {
+public class BookmarkQueryService implements ReadBookmarksUseCase, IsBookmarkedUseCase {
 
     private final BookmarkQueryMapper bookmarkQueryMapper;
-    private final PetFairQueryMapper petFairQueryMapper;
 
-    private final PetFairQueryDSLRepository petFairQueryDSLRepository;
     private final BookmarkQueryDSLRepository bookmarkQueryDSLRepository;
 
     @Transactional(readOnly = true)
@@ -64,15 +56,6 @@ public class BookmarkQueryService implements ReadBookmarksUseCase, ReadBookmarkB
         Long nextCursor = bookmarkDtos.getLast().petFairId();
 
         return new SummaryBookmarksResponse(hasMore, nextCursor, bookmarkDtos);
-    }
-
-    @Transactional(readOnly = true)
-    @Override
-    public DetailPetFairResponse readDetailBookmarkPetFair(Long petFairId) {
-        PetFairEntity petFairEntity = petFairQueryDSLRepository.findActiveById(petFairId)
-                .orElseThrow(() -> new CustomException(NOT_FOUND_PET_FAIR_POSTER));
-
-        return petFairQueryMapper.toDetailPetFair(petFairEntity);
     }
 
     @Transactional(readOnly = true)
