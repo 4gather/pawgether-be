@@ -117,7 +117,7 @@ public class UserCommandService implements SignUpCommandOauthUseCase, SignUpComm
 
         // refresh token 발급
         String refreshToken = generateRefreshToken();
-        redisTemplate.opsForValue().set(refreshToken, String.valueOf(userEntity.getId()), Duration.ofDays(REFRESH_TOKEN_VALIDITY_SECONDS));
+        redisTemplate.opsForValue().set(refreshToken, String.valueOf(userEntity.getId()), Duration.ofSeconds(REFRESH_TOKEN_VALIDITY_SECONDS));
 
         return userCommandMapper.toSignInWithRefreshToken(userEntity, accessToken, refreshToken);
     }
