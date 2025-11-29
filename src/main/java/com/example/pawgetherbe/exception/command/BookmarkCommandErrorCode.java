@@ -5,8 +5,8 @@ import org.springframework.http.HttpStatus;
 
 public enum BookmarkCommandErrorCode implements ErrorCode {
     NOT_FOUND_BOOKMARK(HttpStatus.NOT_FOUND, "NOT_FOUND_BOOKMARK", "북마크가 존재하지 않습니다."),
-    FAIL_CANCEL_BOOKMARK(HttpStatus.INTERNAL_SERVER_ERROR, "FAIL_CANCEL_BOOKMARK", "북마크 취소 실패."),
-    FAIL_CREATE_BOOKMARK(HttpStatus.INTERNAL_SERVER_ERROR, "FAIL_CREATE_BOOKMARK", "북마크 생성 실패.");
+    FAIL_CANCEL_BOOKMARK(HttpStatus.INTERNAL_SERVER_ERROR, "FAIL_CANCEL_BOOKMARK", "북마크 취소 실패"),
+    FAIL_CREATE_BOOKMARK(HttpStatus.INTERNAL_SERVER_ERROR, "FAIL_CREATE_BOOKMARK", "북마크 생성 실패");
 
     private final String message;
     private final String code;

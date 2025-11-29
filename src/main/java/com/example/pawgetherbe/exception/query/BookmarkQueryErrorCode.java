@@ -4,7 +4,9 @@ import com.example.pawgetherbe.common.exceptionHandler.ErrorCode;
 import org.springframework.http.HttpStatus;
 
 public enum BookmarkQueryErrorCode implements ErrorCode {
-    NOT_FOUND_BOOKMARK(HttpStatus.NOT_FOUND, "NOT_FOUND_BOOKMARK", "북마크가 존재하지 않습니다.");
+    NOT_FOUND_BOOKMARK(HttpStatus.NOT_FOUND, "NOT_FOUND_BOOKMARK", "북마크가 존재하지 않습니다."),
+    FAIL_READ_BOOKMARK_LIST(HttpStatus.INTERNAL_SERVER_ERROR, "FAIL_READ_BOOKMARK_LIST", "북마크 리스트 불러오기 실패"),
+    FAIL_READ_BOOKMARK_STATUS(HttpStatus.INTERNAL_SERVER_ERROR, "FAIL_READ_BOOKMARK_STATUS", "북마크 상태 불러오기 실패");
 
     private final String message;
     private final String code;

@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.example.pawgetherbe.exception.query.BookmarkQueryErrorCode.NOT_FOUND_BOOKMARK;
+import static com.example.pawgetherbe.exception.query.BookmarkQueryErrorCode.*;
 import static com.example.pawgetherbe.exception.query.PetFairQueryErrorCode.NOT_FOUND_PET_FAIR_POSTER;
 
 @Service
@@ -37,7 +37,14 @@ public class BookmarkQueryService implements ReadBookmarksUseCase, ReadBookmarkB
 
     @Transactional(readOnly = true)
     public SummaryBookmarksResponse readBookmarks() {
-        List<BookmarkEntity> bookmarkEntities = bookmarkQueryDSLRepository.readBookmarks();
+
+        List<BookmarkEntity> bookmarkEntities;
+
+        try {
+            bookmarkEntities = bookmarkQueryDSLRepository.readBookmarks();
+        } catch (Exception e) {
+            throw new CustomException(FAIL_READ_BOOKMARK_LIST);
+        }
 
         if (bookmarkEntities == null || bookmarkEntities.isEmpty()) {
             throw new CustomException(NOT_FOUND_BOOKMARK);
@@ -71,10 +78,14 @@ public class BookmarkQueryService implements ReadBookmarksUseCase, ReadBookmarkB
     @Transactional(readOnly = true)
     @Override
     public Set<TargetResponse> isBookmarked(Set<Long> targetIds) {
-        Set<Long> isBookmarkedPetFair = bookmarkQueryDSLRepository.existsBookmark(targetIds);
+        try {
+            Set<Long> isBookmarkedPetFair = bookmarkQueryDSLRepository.existsBookmark(targetIds);
 
-        return isBookmarkedPetFair.stream()
-                .map(post -> new TargetResponse(post, targetIds.contains(post)))
-                .collect(Collectors.toSet());
+            return isBookmarkedPetFair.stream()
+                    .map(post -> new TargetResponse(post, targetIds.contains(post)))
+                    .collect(Collectors.toSet());
+        } catch (Exception e) {
+            throw new CustomException(FAIL_READ_BOOKMARK_STATUS);
+        }
     }
 }
