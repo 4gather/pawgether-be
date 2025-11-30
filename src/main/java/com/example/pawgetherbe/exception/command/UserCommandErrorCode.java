@@ -9,13 +9,16 @@ public enum UserCommandErrorCode implements ErrorCode {
 
     NOT_FOUND_USER(HttpStatus.NOT_FOUND,"NOT_FOUND_USER","존재하지 않는 계정입니다."),
 
+    USER_MISMATCH(HttpStatus.UNAUTHORIZED, "USER_MISMATCH", "토큰 갱신을 요청하는 사용자와 보유 사용자가 일치하지 않습니다."),
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "PASSWORD_MISMATCH", "비밀번호가 일치하지 않습니다."),
 
     OAUTH_PROVIDER_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "OAUTH_PROVIDER_NOT_SUPPORTED", "지원하지 않는 OAuth2 입니다."),
 
     CONFLICT_EMAIL(HttpStatus.CONFLICT, "CONFLICT_EMAIL", "이미 존재하는 Email 입니다."),
     CONFLICT_NICKNAME(HttpStatus.CONFLICT, "CONFLICT_NICKNAME", "이미 존재하는 NickName 입니다."),
-    CONFLICT_USER(HttpStatus.CONFLICT, "CONFLICT_USER", "이미 가입된 계정입니다")
+    CONFLICT_USER(HttpStatus.CONFLICT, "CONFLICT_USER", "이미 가입된 계정입니다"),
+
+    FAIL_REFRESH(HttpStatus.INTERNAL_SERVER_ERROR, "REFRESH_FAIL", "토큰 갱신 실패")
     ;
 
     private final String message;

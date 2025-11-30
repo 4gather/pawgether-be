@@ -3,14 +3,7 @@ package com.example.pawgetherbe.service.command;
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
 import com.example.pawgetherbe.common.oauth.OAuthProviderSpec;
 import com.example.pawgetherbe.config.OauthConfig;
-import com.example.pawgetherbe.controller.command.dto.UserCommandDto.Oauth2SignUpResponse;
-import com.example.pawgetherbe.controller.command.dto.UserCommandDto.PasswordEditRequest;
-import com.example.pawgetherbe.controller.command.dto.UserCommandDto.SignInUserRequest;
-import com.example.pawgetherbe.controller.command.dto.UserCommandDto.SignInUserWithRefreshTokenResponse;
-import com.example.pawgetherbe.controller.command.dto.UserCommandDto.UpdateUserRequest;
-import com.example.pawgetherbe.controller.command.dto.UserCommandDto.UpdateUserResponse;
-import com.example.pawgetherbe.controller.command.dto.UserCommandDto.UserAccessTokenDto;
-import com.example.pawgetherbe.controller.command.dto.UserCommandDto.UserSignUpRequest;
+import com.example.pawgetherbe.controller.command.dto.UserCommandDto.*;
 import com.example.pawgetherbe.domain.entity.OauthEntity;
 import com.example.pawgetherbe.domain.entity.UserEntity;
 import com.example.pawgetherbe.domain.status.AccessTokenStatus;
@@ -20,12 +13,7 @@ import com.example.pawgetherbe.mapper.command.UserCommandMapper;
 import com.example.pawgetherbe.repository.command.OauthCommandRepository;
 import com.example.pawgetherbe.repository.command.UserCommandRepository;
 import com.example.pawgetherbe.usecase.jwt.command.RefreshCommandUseCase;
-import com.example.pawgetherbe.usecase.users.command.DeleteUserCommandUseCase;
-import com.example.pawgetherbe.usecase.users.command.EditUserCommandUseCase;
-import com.example.pawgetherbe.usecase.users.command.SignInCommandUseCase;
-import com.example.pawgetherbe.usecase.users.command.SignOutCommandUseCase;
-import com.example.pawgetherbe.usecase.users.command.SignUpCommandOauthUseCase;
-import com.example.pawgetherbe.usecase.users.command.SignUpCommandUseCase;
+import com.example.pawgetherbe.usecase.users.command.*;
 import com.example.pawgetherbe.util.EncryptUtil;
 import com.example.pawgetherbe.util.JwtUtil;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -48,15 +36,8 @@ import java.util.UUID;
 
 import static com.example.pawgetherbe.common.filter.JwtAuthFilter.AUTH_BEARER;
 import static com.example.pawgetherbe.domain.UserContext.getUserId;
-import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.CONFLICT_USER;
-import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.NOT_FOUND_USER;
-import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.OAUTH_PROVIDER_NOT_SUPPORTED;
-import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.PASSWORD_MISMATCH;
-import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.UNAUTHORIZED_LOGIN;
-import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.UNAUTHORIZED_PASSWORD;
-import static com.example.pawgetherbe.util.EncryptUtil.generateRefreshToken;
-import static com.example.pawgetherbe.util.EncryptUtil.matches;
-import static com.example.pawgetherbe.util.EncryptUtil.passwordEncode;
+import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.*;
+import static com.example.pawgetherbe.util.EncryptUtil.*;
 
 @Slf4j
 @Service
@@ -117,7 +98,7 @@ public class UserCommandService implements SignUpCommandOauthUseCase, SignUpComm
 
         // refresh token 발급
         String refreshToken = generateRefreshToken();
-        redisTemplate.opsForValue().set(refreshToken, String.valueOf(userEntity.getId()), Duration.ofDays(REFRESH_TOKEN_VALIDITY_SECONDS));
+        redisTemplate.opsForValue().set(refreshToken, String.valueOf(userEntity.getId()), Duration.ofSeconds(REFRESH_TOKEN_VALIDITY_SECONDS));
 
         return userCommandMapper.toSignInWithRefreshToken(userEntity, accessToken, refreshToken);
     }
@@ -230,32 +211,43 @@ public class UserCommandService implements SignUpCommandOauthUseCase, SignUpComm
     @Transactional(readOnly = true)
     public Map<String, String> refresh(String authHeader, String refreshToken) {
 
+        // Authorization이 Bearer로 시작하는가
         if (!authHeader.startsWith(AUTH_BEARER)) {
             throw new CustomException(UNAUTHORIZED_LOGIN);
         }
 
         String accessToken = authHeader.substring(AUTH_BEARER.length());
 
+        // Access Token이 만료된 것만 처리하기 위함
         if (jwtUtil.validateToken(accessToken).equals(AccessTokenStatus.INVALID) ||
                 jwtUtil.validateToken(accessToken).equals(AccessTokenStatus.VALID)) {
             throw new CustomException(UNAUTHORIZED_LOGIN);
         }
 
-        // case1] refresh token 만료: 재로그인
+        // refresh token 만료
         if (!isValidRefreshToken(refreshToken)) {
             throw new CustomException(UNAUTHORIZED_LOGIN);
         }
 
+        // refresh 요청한 사용자 == refresh 보유한 사용자
         Long userId = jwtUtil.getUserIdFromToken(accessToken);
         String userRole = jwtUtil.getUserRoleFromToken(accessToken);
 
-        // case2] refresh token 만료 X: 갱신 로직
-        UserEntity user = userCommandRepository.findById(userId).orElseThrow(
-                () -> new CustomException(NOT_FOUND_USER)
-        );
+        String userIdFromCache = redisTemplate.opsForValue().get(refreshToken);
+
+        if (userIdFromCache == null || userIdFromCache.isBlank() || userIdFromCache.equals(String.valueOf(userId))) {
+            throw new CustomException(USER_MISMATCH);
+        }
 
         String renewAccessToken = jwtUtil.generateAccessToken(userCommandMapper.toAccessTokenDto(userId, userRole));
         String renewRefreshToken = EncryptUtil.generateRefreshToken();
+
+        // Valkey 저장 오류
+        try {
+            redisTemplate.opsForValue().set(refreshToken, String.valueOf(userId), Duration.ofSeconds(REFRESH_TOKEN_VALIDITY_SECONDS));
+        } catch (Exception e) {
+            throw new CustomException(FAIL_REFRESH);
+        }
 
         return Map.of(
                 "accessToken", renewAccessToken,
