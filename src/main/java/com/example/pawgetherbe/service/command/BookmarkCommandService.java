@@ -47,7 +47,7 @@ public class BookmarkCommandService implements RegistryBookmarkUseCase, CancelBo
             bookmarkEntity.removePetFair(petFairEntity);
             bookmarkCommandRepository.deleteByPetFair_Id(petFairId);
 
-            return new BookmarkResponse(false);
+            return new BookmarkResponse(petFairId, false);
         } catch (Exception e) {
             throw new CustomException(FAIL_CANCEL_BOOKMARK);
         }
@@ -72,7 +72,7 @@ public class BookmarkCommandService implements RegistryBookmarkUseCase, CancelBo
             bookmarkEntity.addPetFair(petFairEntity);
             bookmarkCommandRepository.save(bookmarkEntity);
 
-            return new BookmarkResponse(true);
+            return new BookmarkResponse(petFairId, true);
         } catch (Exception e) {
             throw new CustomException(FAIL_CREATE_BOOKMARK);
         }
