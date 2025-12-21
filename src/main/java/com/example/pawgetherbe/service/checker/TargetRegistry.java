@@ -8,7 +8,7 @@ import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
-public class LikeTargetRegistry {
+public class TargetRegistry {
     private final Map<String, TargetChecker> checkers;
 
     public boolean existsByOneTarget(String targetType, Long targetId) {

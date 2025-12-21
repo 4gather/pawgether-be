@@ -7,6 +7,7 @@ import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.TargetRespo
 import com.example.pawgetherbe.domain.entity.BookmarkEntity;
 import com.example.pawgetherbe.mapper.query.BookmarkQueryMapper;
 import com.example.pawgetherbe.repository.query.BookmarkQueryDSLRepository;
+import com.example.pawgetherbe.service.checker.TargetRegistry;
 import com.example.pawgetherbe.usecase.bookmark.IsBookmarkedUseCase;
 import com.example.pawgetherbe.usecase.bookmark.ReadBookmarksUseCase;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,8 @@ public class BookmarkQueryService implements ReadBookmarksUseCase, IsBookmarkedU
     private final BookmarkQueryMapper bookmarkQueryMapper;
 
     private final BookmarkQueryDSLRepository bookmarkQueryDSLRepository;
+
+    private final TargetRegistry targetRegistry;
 
     @Transactional(readOnly = true)
     public SummaryBookmarksResponse readBookmarks() {

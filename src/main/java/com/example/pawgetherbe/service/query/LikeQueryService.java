@@ -6,7 +6,7 @@ import com.example.pawgetherbe.domain.entity.LikeEntity;
 import com.example.pawgetherbe.exception.query.LikeQueryErrorCode;
 import com.example.pawgetherbe.mapper.query.LikeQueryMapper;
 import com.example.pawgetherbe.repository.query.LikeQueryDSLRepository;
-import com.example.pawgetherbe.service.checker.LikeTargetRegistry;
+import com.example.pawgetherbe.service.checker.TargetRegistry;
 import com.example.pawgetherbe.usecase.like.CountLikeUseCase;
 import com.example.pawgetherbe.usecase.like.ExistsLikeUseCase;
 import com.example.pawgetherbe.usecase.like.ReadLikesUseCase;
@@ -26,7 +26,7 @@ import static com.example.pawgetherbe.exception.query.LikeQueryErrorCode.NOT_FOU
 @RequiredArgsConstructor
 public class LikeQueryService implements ReadLikesUseCase, ExistsLikeUseCase, CountLikeUseCase {
 
-    private final LikeTargetRegistry likeTargetRegistry;
+    private final TargetRegistry targetRegistry;
 
     private final LikeQueryMapper likeQueryMapper;
 
@@ -99,10 +99,10 @@ public class LikeQueryService implements ReadLikesUseCase, ExistsLikeUseCase, Co
     }
 
     private boolean isExistTarget(TargetRequest targetRequest) {
-        return likeTargetRegistry.existsByOneTarget(targetRequest.targetType(), targetRequest.targetId());
+        return targetRegistry.existsByOneTarget(targetRequest.targetType(), targetRequest.targetId());
     }
 
     private boolean isExistsTargetList(TargetRequests targetRequest) {
-        return likeTargetRegistry.existsByTargetList(targetRequest.targetType(), targetRequest.targetIds());
+        return targetRegistry.existsByTargetList(targetRequest.targetType(), targetRequest.targetIds());
     }
 }
