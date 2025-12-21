@@ -64,6 +64,16 @@ public class BookmarkQueryService implements ReadBookmarksUseCase, IsBookmarkedU
     @Transactional(readOnly = true)
     @Override
     public Set<TargetResponse> isBookmarked(Set<Long> targetIds) {
+        // PetFair에서 10개이하로만 아이디를 제공하므로 11개 이상인 경우는 비정상적인 접근이라 판단
+        if (targetIds.size() > 10) {
+            throw new CustomException(OVER_SIZE_TARGET_IDS);
+        }
+
+        // targetIds 중에서 REMOVED || 존재하지 않는 게시글일 때 에러 반환
+        if (!targetRegistry.existsByTargetList("post", targetIds)) {
+            throw new CustomException(NOT_FOUND_SOME_TARGET);
+        }
+
         try {
             Set<Long> isBookmarkedPetFair = bookmarkQueryDSLRepository.existsBookmark(targetIds);
 
