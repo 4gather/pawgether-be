@@ -2,7 +2,6 @@ package com.example.pawgetherbe.repository.query;
 
 import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.ReadBookmarkListResponse;
 import com.example.pawgetherbe.domain.UserContext;
-import com.example.pawgetherbe.domain.entity.BookmarkEntity;
 import com.example.pawgetherbe.domain.entity.QBookmarkEntity;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -54,6 +53,7 @@ public class BookmarkQueryDSLRepository {
 //                            bookmarkEntity.user.id.eq(Long.parseLong(UserContext.getUserId())),
                             bookmarkEntity.petFair.id.in(targetIds)
                     )
+                    .orderBy(bookmarkEntity.id.desc())
                     .fetch()
         );
     }
