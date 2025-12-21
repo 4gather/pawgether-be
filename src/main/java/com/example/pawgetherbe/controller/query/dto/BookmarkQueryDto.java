@@ -1,24 +1,17 @@
 package com.example.pawgetherbe.controller.query.dto;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public final class BookmarkQueryDto {
     public record SummaryBookmarksResponse(
             boolean hasMore,
-            Long nextCursor,
-            List<DetailBookmarkedPetFairResponse> petFairResponses
+            long nextCursor,
+            List<TargetResponse> bookmarkResponseList
     ) {}
 
-    public record DetailBookmarkedPetFairResponse(
-            Long petFairId,
-            Long counter,
-            String title,
-            String posterImageUrl,
-            LocalDate startDate,
-            LocalDate endDate,
-            String simpleAddress,
-            boolean isBookmark
+    public record ReadBookmarkListResponse(
+            long bookmarkId,
+            long petFairId
     ) {}
 
     public record TargetResponse(

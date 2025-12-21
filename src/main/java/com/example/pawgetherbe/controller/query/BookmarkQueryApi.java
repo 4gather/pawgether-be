@@ -18,8 +18,8 @@ public class BookmarkQueryApi {
     private final IsBookmarkedUseCase isBookmarkedUseCase;
 
     @GetMapping
-    public SummaryBookmarksResponse readBookmarks() {
-        return readBookmarksUseCase.readBookmarks();
+    public SummaryBookmarksResponse readBookmarkList(@RequestParam(required = false) Long cursor) {
+        return readBookmarksUseCase.readBookmarkList(cursor);
     }
 
     @GetMapping("/exists")

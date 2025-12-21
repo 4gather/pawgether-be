@@ -1,10 +1,9 @@
 package com.example.pawgetherbe.service.query;
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
-import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.DetailBookmarkedPetFairResponse;
+import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.ReadBookmarkListResponse;
 import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.SummaryBookmarksResponse;
 import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.TargetResponse;
-import com.example.pawgetherbe.domain.entity.BookmarkEntity;
 import com.example.pawgetherbe.mapper.query.BookmarkQueryMapper;
 import com.example.pawgetherbe.repository.query.BookmarkQueryDSLRepository;
 import com.example.pawgetherbe.service.checker.TargetRegistry;
@@ -31,34 +30,34 @@ public class BookmarkQueryService implements ReadBookmarksUseCase, IsBookmarkedU
     private final TargetRegistry targetRegistry;
 
     @Transactional(readOnly = true)
-    public SummaryBookmarksResponse readBookmarks() {
+    public SummaryBookmarksResponse readBookmarkList(Long cursor) {
 
-        List<BookmarkEntity> bookmarkEntities;
+        List<ReadBookmarkListResponse> readBookmarkList;
 
         try {
-            bookmarkEntities = bookmarkQueryDSLRepository.readBookmarks();
+            readBookmarkList = bookmarkQueryDSLRepository.readBookmarkList(cursor);
         } catch (Exception e) {
             throw new CustomException(FAIL_READ_BOOKMARK_LIST);
         }
 
-        if (bookmarkEntities == null || bookmarkEntities.isEmpty()) {
+        if(readBookmarkList == null || readBookmarkList.isEmpty()) {
             throw new CustomException(NOT_FOUND_BOOKMARK);
         }
 
-        boolean hasMore = (bookmarkEntities.size() == 11); // hasMore 고려(최대 반환 개수 + 1)
+        boolean hasMore = (readBookmarkList.size() == 11); // hasMore 고려(최대 반환 개수 + 1)
 
         if (hasMore) {
             // 반환할 10개의 게시글만 제공
-            bookmarkEntities.removeLast();
+            readBookmarkList.removeLast();
         }
 
-        List<DetailBookmarkedPetFairResponse> bookmarkDtos = bookmarkEntities.stream()
-                .map(request -> bookmarkQueryMapper.toDetailBookmarkedPetPairResponse(request.getPetFair(), true))
+        List<TargetResponse> bookmarkDtos = readBookmarkList.stream()
+                .map(request -> bookmarkQueryMapper.toTargetResponse(request.petFairId(), true))
                 .toList();
 
-        Long nextCursor = bookmarkDtos.getLast().petFairId();
+        long lastCursor = readBookmarkList.getLast().bookmarkId();
 
-        return new SummaryBookmarksResponse(hasMore, nextCursor, bookmarkDtos);
+        return new SummaryBookmarksResponse(hasMore, lastCursor, bookmarkDtos);
     }
 
     @Transactional(readOnly = true)
