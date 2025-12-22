@@ -10,7 +10,7 @@ import com.example.pawgetherbe.mapper.command.LikeCommandMapper;
 import com.example.pawgetherbe.repository.command.LikeCommandRepository;
 import com.example.pawgetherbe.repository.query.LikeQueryDSLRepository;
 import com.example.pawgetherbe.repository.query.UserQueryRepository;
-import com.example.pawgetherbe.service.checker.LikeTargetRegistry;
+import com.example.pawgetherbe.service.checker.TargetRegistry;
 import com.example.pawgetherbe.usecase.like.CancelLikeUseCase;
 import com.example.pawgetherbe.usecase.like.LikeUseCase;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ public class LikeCommandService implements LikeUseCase, CancelLikeUseCase {
 
     private final LikeCommandMapper likeCommandMapper;
 
-    private final LikeTargetRegistry likeTargetRegistry;
+    private final TargetRegistry targetRegistry;
 
     @Transactional
     @Override
@@ -44,7 +44,7 @@ public class LikeCommandService implements LikeUseCase, CancelLikeUseCase {
         );
 
         // 해당 Target 존재 유무
-        if (!likeTargetRegistry.existsByOneTarget(likeRequest.targetType(), likeRequest.targetId())) {
+        if (!targetRegistry.existsByOneTarget(likeRequest.targetType(), likeRequest.targetId())) {
             throw new CustomException(NOT_FOUND_TARGET);
         }
 

@@ -1,12 +1,12 @@
 package com.example.pawgetherbe.service.query;
 
 import com.example.pawgetherbe.common.exceptionHandler.CustomException;
-import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.DetailBookmarkedPetFairResponse;
+import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.ReadBookmarkListResponse;
 import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.SummaryBookmarksResponse;
 import com.example.pawgetherbe.controller.query.dto.BookmarkQueryDto.TargetResponse;
-import com.example.pawgetherbe.domain.entity.BookmarkEntity;
 import com.example.pawgetherbe.mapper.query.BookmarkQueryMapper;
 import com.example.pawgetherbe.repository.query.BookmarkQueryDSLRepository;
+import com.example.pawgetherbe.service.checker.TargetRegistry;
 import com.example.pawgetherbe.usecase.bookmark.IsBookmarkedUseCase;
 import com.example.pawgetherbe.usecase.bookmark.ReadBookmarksUseCase;
 import lombok.RequiredArgsConstructor;
@@ -27,40 +27,52 @@ public class BookmarkQueryService implements ReadBookmarksUseCase, IsBookmarkedU
 
     private final BookmarkQueryDSLRepository bookmarkQueryDSLRepository;
 
-    @Transactional(readOnly = true)
-    public SummaryBookmarksResponse readBookmarks() {
+    private final TargetRegistry targetRegistry;
 
-        List<BookmarkEntity> bookmarkEntities;
+    @Transactional(readOnly = true)
+    public SummaryBookmarksResponse readBookmarkList(Long cursor) {
+
+        List<ReadBookmarkListResponse> readBookmarkList;
 
         try {
-            bookmarkEntities = bookmarkQueryDSLRepository.readBookmarks();
+            readBookmarkList = bookmarkQueryDSLRepository.readBookmarkList(cursor);
         } catch (Exception e) {
             throw new CustomException(FAIL_READ_BOOKMARK_LIST);
         }
 
-        if (bookmarkEntities == null || bookmarkEntities.isEmpty()) {
+        if(readBookmarkList == null || readBookmarkList.isEmpty()) {
             throw new CustomException(NOT_FOUND_BOOKMARK);
         }
 
-        boolean hasMore = (bookmarkEntities.size() == 11); // hasMore 고려(최대 반환 개수 + 1)
+        boolean hasMore = (readBookmarkList.size() == 11); // hasMore 고려(최대 반환 개수 + 1)
 
         if (hasMore) {
             // 반환할 10개의 게시글만 제공
-            bookmarkEntities.removeLast();
+            readBookmarkList.removeLast();
         }
 
-        List<DetailBookmarkedPetFairResponse> bookmarkDtos = bookmarkEntities.stream()
-                .map(request -> bookmarkQueryMapper.toDetailBookmarkedPetPairResponse(request.getPetFair(), true))
+        List<TargetResponse> bookmarkDtos = readBookmarkList.stream()
+                .map(request -> bookmarkQueryMapper.toTargetResponse(request.petFairId(), true))
                 .toList();
 
-        Long nextCursor = bookmarkDtos.getLast().petFairId();
+        long lastCursor = readBookmarkList.getLast().bookmarkId();
 
-        return new SummaryBookmarksResponse(hasMore, nextCursor, bookmarkDtos);
+        return new SummaryBookmarksResponse(hasMore, lastCursor, bookmarkDtos);
     }
 
     @Transactional(readOnly = true)
     @Override
     public Set<TargetResponse> isBookmarked(Set<Long> targetIds) {
+        // PetFair에서 10개이하로만 아이디를 제공하므로 11개 이상인 경우는 비정상적인 접근이라 판단
+        if (targetIds.size() > 10) {
+            throw new CustomException(OVER_SIZE_TARGET_IDS);
+        }
+
+        // targetIds 중에서 REMOVED || 존재하지 않는 게시글일 때 에러 반환
+        if (!targetRegistry.existsByTargetList("post", targetIds)) {
+            throw new CustomException(NOT_FOUND_SOME_TARGET);
+        }
+
         try {
             Set<Long> isBookmarkedPetFair = bookmarkQueryDSLRepository.existsBookmark(targetIds);
 
