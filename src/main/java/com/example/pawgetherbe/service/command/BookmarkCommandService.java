@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 import static com.example.pawgetherbe.exception.command.BookmarkCommandErrorCode.*;
 import static com.example.pawgetherbe.exception.command.PetFairCommandErrorCode.NOT_FOUND_PET_FAIR;
 import static com.example.pawgetherbe.exception.command.UserCommandErrorCode.NOT_FOUND_USER;
@@ -64,6 +66,15 @@ public class BookmarkCommandService implements RegistryBookmarkUseCase, CancelBo
                 .orElseThrow(() -> new CustomException(NOT_FOUND_USER));
         PetFairEntity petFairEntity = petFairCommandRepository.findById(petFairId)
                 .orElseThrow(() -> new CustomException(NOT_FOUND_PET_FAIR));
+
+        // 해당 게시글이 이미 북마크인지 확인하는 로직 필요
+        List<BookmarkEntity> bookmarkEntityList = petFairEntity.getBookmarkEntities();
+        boolean isAlreadyExists = bookmarkEntityList.stream()
+                .anyMatch(entity -> entity.getPetFair().getId().equals(petFairId));
+
+        if (isAlreadyExists) {
+            throw new CustomException(ALREADY_BOOKMARK);
+        }
 
         BookmarkEntity bookmarkEntity = bookmarkCommandMapper.toEntity(userEntity, petFairEntity);
 
