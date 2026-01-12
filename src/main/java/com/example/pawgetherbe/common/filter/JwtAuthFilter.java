@@ -53,7 +53,9 @@ public class JwtAuthFilter implements Filter {
             new ExcludeRule(HttpMethod.GET,  "/api/v1/comments/count/*"),
 
             new ExcludeRule(HttpMethod.GET,  "/api/v1/replies/*"),
-            new ExcludeRule(HttpMethod.POST, "/api/v1/replies/count")
+            new ExcludeRule(HttpMethod.POST, "/api/v1/replies/count"),
+
+            new ExcludeRule(HttpMethod.GET, "/api/v1/likes/counts/*")
     );
 
     private boolean isExcluded(HttpServletRequest request) {
